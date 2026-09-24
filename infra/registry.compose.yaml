@@ -1,0 +1,24 @@
+name: shortener-registry
+services:
+  registry:
+    image: registry@sha256:325b4b29b041e82803abeb703e201655e4e23ab83264ec1a7c9ddb0a5b14a6e0
+    container_name: shortener-registry
+    labels:
+      shortener.lab/component: registry
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5001:5000"
+    volumes:
+      - type: bind
+        source: E:/k8s-learning/registry-data
+        target: /var/lib/registry
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "false"
+    mem_limit: 128m
+    cpus: 0.5
+    networks:
+      - lab
+networks:
+  lab:
+    external: true
+    name: k3d-shortener

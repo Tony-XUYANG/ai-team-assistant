@@ -1,0 +1,4 @@
+server = "http://shortener-registry:5000"
+
+[host."http://shortener-registry:5000"]
+  capabilities = ["pull", "resolve"]

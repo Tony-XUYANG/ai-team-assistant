@@ -1,0 +1,32 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: shortener
+servers: 1
+agents: 0
+image: rancher/k3s:v1.36.3-k3s1
+kubeAPI:
+  host: "127.0.0.1"
+  hostIP: "127.0.0.1"
+  hostPort: "6550"
+ports:
+  - port: "127.0.0.1:8081:30080"
+    nodeFilters:
+      - server:0:direct
+volumes:
+  - volume: shortener-k8s-storage:/var/lib/rancher/k3s/storage
+    nodeFilters:
+      - server:0
+options:
+  k3d:
+    wait: true
+    timeout: "180s"
+    disableLoadbalancer: true
+  k3s:
+    extraArgs:
+      - arg: "--disable=traefik,servicelb,metrics-server"
+        nodeFilters:
+          - server:0
+  kubeconfig:
+    updateDefaultKubeconfig: false
+    switchCurrentContext: false

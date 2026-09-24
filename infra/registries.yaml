@@ -1,0 +1,4 @@
+mirrors:
+  "localhost:5001":
+    endpoint:
+      - "http://shortener-registry:5000"

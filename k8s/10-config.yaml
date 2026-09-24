@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: shortener
+data:
+  PORT: "8000"
+  PGHOST: db-client
+  PGPORT: "5432"

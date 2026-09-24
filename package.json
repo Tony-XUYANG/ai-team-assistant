@@ -1,0 +1,34 @@
+{
+  "name": "learning-url-shortener",
+  "version": "3.3.0",
+  "private": true,
+  "description": "A URL shortener for learning Linux, Docker, and Kubernetes",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node migrate.js",
+    "test:title": "node --test test/title.test.js",
+    "test": "node --test test/smoke.test.js",
+    "test:version": "node --test test/version.test.js",
+    "test:unit": "node --test test/logging.test.js",
+    "test:request-id": "node --test test/request-id.test.js",
+    "drill:database": "node scripts/drill-database.js",
+    "drill:resources": "node scripts/drill-resources.js",
+    "test:resources": "node --test test/resource.test.js",
+    "drill:migration": "node scripts/drill-migration.js",
+    "test:migration": "node --test test/migration.test.js",
+    "backup:database": "node scripts/backup-database.js",
+    "test:backup": "node --test test/backup.test.js",
+    "release:local": "node scripts/release-local.js",
+    "ci": "node scripts/ci.js",
+    "registry:setup": "node scripts/setup-registry.js",
+    "release:registry": "node scripts/release-local.js --registry",
+    "test:persistence": "node scripts/verify-persistence.js",
+    "test:k8s": "node scripts/verify-k8s.js",
+    "audit:db-access": "node scripts/verify-db-access.js",
+    "test:db-access": "node --test test/db-access.test.js"
+  },
+  "dependencies": {
+    "pg": "8.23.0"
+  }
+}

@@ -1,0 +1,35 @@
+name: Candidate Image CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5
+        with:
+          version: v29.6.2
+          daemon-config: |
+            {"features":{"containerd-snapshotter":true}}
+      - name: Prepare isolated test database image
+        run: docker pull postgres:17-alpine
+      - name: Test source and built image
+        run: node scripts/ci.js
+      - name: Show acceptance summary
+        if: always()
+        shell: bash
+        run: |
+          node -e 'const fs=require("node:fs"); if(fs.existsSync(".ci")) for(const id of fs.readdirSync(".ci")){const p=`.ci/${id}/ci-report.json`;if(fs.existsSync(p)){const r=JSON.parse(fs.readFileSync(p,"utf8"));console.log(JSON.stringify({id:r.id,status:r.status,phase:r.phase,unit:r.unit?.count,candidate:r.candidate?.count,digest:r.platformDigest,cleanup:r.cleanup},null,2));}}'
