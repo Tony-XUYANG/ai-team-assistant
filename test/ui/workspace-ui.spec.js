@@ -190,20 +190,24 @@ test("copy fallback shows the Markdown without claiming success", async ({ page 
 
 test("project overview compares loaded work without opening every brief", async ({ page }) => {
   const overviewProjects = [
-    { id, name: "网站发布", objective: "把审阅后的首页发布出去", status: "active", updated_at: "2026-09-25T01:00:00.000Z", open_actions: 2, open_blockers: 1, unverified_entries: 3 },
-    { id: "42345678-1234-4123-8123-123456789abc", name: "运营交接", objective: "整理本周客户反馈", status: "paused", updated_at: "2026-09-24T01:00:00.000Z", open_actions: 0, open_blockers: 0, unverified_entries: 1 },
+    { id, name: "网站发布", objective: "把审阅后的首页发布出去", status: "active", updated_at: "2026-09-25T01:00:00.000Z", open_actions: 2, open_blockers: 1, unverified_entries: 3,
+      attention: [{ id: "att-1", project_id: id, kind: "blocker", content: "生产发布被阻塞", verification: "confirmed", status: "open", owner_ref: "平台组", created_at: "2026-09-25T01:00:00.000Z" }] },
+    { id: "42345678-1234-4123-8123-123456789abc", name: "运营交接", objective: "整理本周客户反馈", status: "paused", updated_at: "2026-09-24T01:00:00.000Z", open_actions: 0, open_blockers: 0, unverified_entries: 1, attention: [] },
   ];
   await page.route("**/projects?*", route => route.fulfill({ json: { projects: overviewProjects, next_offset: null } }));
   await page.goto("/#view=overview");
   await expect(page.getByRole("heading", { name: "项目总览" })).toBeVisible();
   await expect(page.getByText("已加载 2 个项目 · 已全部加载")).toBeVisible();
   await expect(page.getByText("未完成待办").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "需要关注" })).toBeVisible();
+  await expect(page.getByText("生产发布被阻塞", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /网站发布/ }).first()).toHaveAttribute("href", /project=12345678/);
   await expect(page.locator(".overview-project")).toHaveCount(2);
   await expect(page.locator(".overview-project-counts [data-metric=\"open_blockers\"] dd").first()).toHaveText("1");
   await page.locator("#overview-status").selectOption("paused");
   await expect(page.locator(".overview-project")).toHaveCount(1);
   await expect(page.getByRole("link", { name: /运营交接/ })).toHaveAttribute("href", /project=42345678/);
   await page.locator("#overview-status").selectOption("all");
-  await page.getByRole("link", { name: /网站发布/ }).click();
+  await page.locator(".overview-project").filter({ hasText: "网站发布" }).getByRole("link").click();
   await expect(page).toHaveURL(/project=12345678/);
 });

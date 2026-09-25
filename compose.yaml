@@ -3,7 +3,7 @@ name: shortener-lab
 services:
   api:
     build: .
-    image: shortener:3.7.0
+    image: shortener:3.8.0
     ports:
       - "127.0.0.1:8080:8000"
     environment:
@@ -22,7 +22,7 @@ services:
 
   migrate:
     build: .
-    image: shortener:3.7.0
+    image: shortener:3.8.0
     command: ["node", "migrate.js"]
     environment:
       PGHOST: db

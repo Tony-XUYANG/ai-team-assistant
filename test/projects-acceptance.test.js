@@ -29,6 +29,7 @@ test("projects persist objectives, constraints and sources and paginate results"
   assert.equal(list.data.projects[0].id, project.id);
   assert.equal(list.data.projects[0].open_actions, 0);
   assert.equal(list.data.projects[0].unverified_entries, 0);
+  assert.deepEqual(list.data.projects[0].attention, []);
   assert.ok(project.source.captured_at);
 });
 
@@ -49,6 +50,9 @@ test("brief separates caller-confirmed facts, disputed claims, decisions and nex
     assert.ok(brief.data.sections[key].entries[0].source.captured_at);
   }
   assert.equal(brief.data.sections.confirmed_facts.entries[0].content, "Checked");
+  const overview = (await request("/projects?limit=100")).data.projects.find(item => item.id === project.id);
+  assert.deepEqual(overview.attention.map(item => item.kind), ["blocker", "action", "progress"]);
+  assert.equal(overview.attention[2].content, "Not checked");
 });
 
 test("revisions close actions and blockers without deleting history or retaining stale facts", async () => {

@@ -124,6 +124,35 @@ function projectCount(project, key) {
   const value = project[key];
   return Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
+function attentionPriority(record) {
+  if (record.kind === "blocker" && record.status === "open") return 0;
+  if (record.kind === "action" && ["todo", "doing"].includes(record.status)) return 1;
+  return 2;
+}
+function renderAttention() {
+  const items = state.projects.flatMap(project => (Array.isArray(project.attention) ? project.attention : [])
+    .map(record => ({ ...record, project })))
+    .sort((a, b) => attentionPriority(a) - attentionPriority(b)
+      || (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0)
+      || a.id.localeCompare(b.id)).slice(0, 12);
+  const panel = $("#attention-panel"); panel.hidden = !state.projectsLoaded || !items.length;
+  $("#attention-count").textContent = items.length ? `显示 ${items.length} 条` : "";
+  const container = $("#attention-list"); container.replaceChildren();
+  for (const item of items) {
+    const node = el("article", "attention-item"); node.dataset.kind = item.kind;
+    const tags = el("div", "attention-tags");
+    tags.append(badge(labels.kind[item.kind] || "记录", item.kind === "blocker" ? "red" : item.kind === "action" ? "blue" : "amber"));
+    if (item.verification !== "confirmed") tags.append(badge(labels.verification[item.verification] || "未知", item.verification === "disputed" ? "red" : "amber"));
+    const content = el("p", "attention-content", item.content || "未记录内容");
+    if (item.content_truncated) content.append(document.createTextNode("…"));
+    const meta = el("p", "attention-meta");
+    const projectLink = el("a", "attention-project", item.project.name);
+    projectLink.href = `#project=${item.project.id}&view=brief`;
+    meta.append(projectLink, document.createTextNode(` · ${labels.status[item.status] || "未记录"}`));
+    if (item.owner_ref) meta.append(document.createTextNode(` · ${item.owner_ref}`));
+    node.append(tags, content, meta); container.append(node);
+  }
+}
 function renderOverview() {
   if (state.id) return;
   const empty = state.projectsLoaded && !state.projects.length && !state.projectsError && !state.projectsLoading;
@@ -152,6 +181,7 @@ function renderOverview() {
     stat.append(heading, el("strong", "overview-stat-value", total), el("small", "", key === "unverified_entries" ? "当前记录 · 不含有争议" : "当前记录 · 含待确认和有争议"));
     stats.append(stat);
   }
+  renderAttention();
   const term = $("#overview-search").value.trim().toLocaleLowerCase(), status = $("#overview-status").value;
   const projects = state.projects.filter(project => project.name.toLocaleLowerCase().includes(term)
     && (status === "all" || project.status === status));

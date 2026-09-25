@@ -6,8 +6,9 @@ including non-technical workers managing multiple projects. See
 
 The implemented code is a JavaScript project-context API, local project
 workbench, URL-shortener service, and Linux, Docker, and Kubernetes operations
-lab. Version 3.7.0 adds a multi-project overview for comparing current actions,
-blockers, and unverified records before opening a project. Version 3.5.0 adds a
+lab. Version 3.8.0 adds a bounded cross-project attention feed to the
+multi-project overview, so current blockers, actions, and unverified records can
+be reviewed before opening a project. Version 3.5.0 adds a
 Chinese workbench for creating projects, recording context, reviewing handoff
 briefs, and preserving revision history. Version 3.6.0 adds a Markdown handoff
 copy flow with a visible clipboard fallback. See
@@ -29,7 +30,7 @@ publishing the source code does not make the running service ready for public us
 
 ## Project context API and workbench: September 25, 2026
 
-The current source and Compose image version is 3.7.0. The existing Kubernetes
+The current source and Compose image version is 3.8.0. The existing Kubernetes
 lab remains on the accepted 3.3.0 image until an explicit release; its existing
 data and PVC have not been migrated by this implementation step. Docker was
 started and all three existing Pods were verified healthy on September 25.

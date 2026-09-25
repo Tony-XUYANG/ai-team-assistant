@@ -45,7 +45,24 @@ function createProjectStore(pool) {
           AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)) AS open_blockers,
         (SELECT count(*)::int FROM public.project_entries e WHERE e.project_id = p.id
           AND e.verification = 'unverified'
-          AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)) AS unverified_entries
+          AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)) AS unverified_entries,
+        COALESCE((SELECT jsonb_agg((to_jsonb(attention) - 'priority')
+            ORDER BY attention.priority, attention.created_at DESC, attention.id DESC)
+          FROM (
+            SELECT e.id, e.project_id, e.kind, left(e.content, 240) AS content,
+              char_length(e.content) > 240 AS content_truncated,
+              e.verification, e.status, e.owner_ref, e.occurred_at, e.created_at,
+              CASE WHEN e.kind = 'blocker' AND e.status = 'open' THEN 0
+                WHEN e.kind = 'action' AND e.status IN ('todo', 'doing') THEN 1 ELSE 2 END AS priority
+            FROM public.project_entries e
+            WHERE e.project_id = p.id
+              AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)
+              AND ((e.kind = 'blocker' AND e.status = 'open')
+                OR (e.kind = 'action' AND e.status IN ('todo', 'doing'))
+                OR e.verification = 'unverified')
+            ORDER BY priority, e.created_at DESC, e.id DESC
+            LIMIT 3
+          ) attention), '[]'::jsonb) AS attention
       FROM public.projects p ORDER BY p.created_at DESC, p.id DESC LIMIT $1 OFFSET $2`,
     [options.limit + 1, options.offset])).rows;
     return page(rows, "projects", options);

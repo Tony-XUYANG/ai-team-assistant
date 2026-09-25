@@ -1,4 +1,4 @@
-# Local Project Workbench (3.7.0)
+# Local Project Workbench (3.8.0)
 
 Resume a project from saved objectives, sources, progress, decisions, blockers,
 and actions. This is a local JavaScript/Node.js and PostgreSQL preview, without
@@ -45,7 +45,9 @@ backup command targets the older lab, not this new workspace database.
 ## Workflows and limits
 
 The project overview compares loaded projects by active actions, blockers, and
-unverified records. Search, status filters, and sorting stay local to the
+unverified records, then shows a bounded cross-project attention feed. Each
+project contributes at most three short previews, with blockers before actions
+before unverified records. Search, status filters, and sorting stay local to the
 loaded page; use Load more to include later pages. Selecting a project opens its
 workspace. The three views provide a handoff brief, immutable record history,
 and project objectives/constraints/sources. The copy button turns the loaded

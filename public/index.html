@@ -35,6 +35,10 @@
         <p id="overview-scope" class="subtle" aria-live="polite"></p>
         <div id="overview-error" class="inline-error" role="alert" hidden></div>
         <div id="overview-stats" class="overview-stats" aria-label="已加载项目统计" hidden></div>
+        <section id="attention-panel" class="attention-panel" aria-labelledby="attention-title" hidden>
+          <div class="attention-heading"><h2 id="attention-title"><i data-lucide="bell-ring"></i>需要关注</h2><span id="attention-count" class="subtle"></span></div>
+          <div id="attention-list" class="attention-list"></div>
+        </section>
         <div id="overview-controls" class="overview-controls" hidden>
           <label class="search overview-search"><i data-lucide="search"></i><input id="overview-search" type="search" aria-label="搜索总览中已加载项目" placeholder="搜索已加载项目" maxlength="120"></label>
           <label>项目状态<select id="overview-status"><option value="all">全部状态</option><option value="active">进行中</option><option value="paused">已暂停</option><option value="archived">已归档</option></select></label>

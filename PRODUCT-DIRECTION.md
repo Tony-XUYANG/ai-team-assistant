@@ -1,6 +1,6 @@
 # AI Team Assistant: Proposed Direction
 
-Status: product exploration with a local workbench and project-context API in 3.7.0.
+Status: product exploration with a local workbench and project-context API in 3.8.0.
 The proposed AI/team workflow below remains a direction, not a completed product.
 
 ## Audience and purpose
@@ -52,7 +52,9 @@ resolution, and JSON export. The 3.6.0 handoff action copies the current brief
 as Markdown with sources, timestamps, verification labels, truncation state, and
 explicit trust boundaries. It leaves transmission to the person using the
 workbench. The 3.7.0 overview compares loaded projects by actions, blockers,
-and unverified records before opening a single-project brief. See
+and unverified records before opening a single-project brief. The 3.8.0 attention
+feed brings bounded previews of current blockers, actions, and unverified records
+across projects. See
 [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md) and
 [WORKSPACE-UI.md](WORKSPACE-UI.md). The local Kubernetes service still runs the
 previously accepted 3.3.0 release until a separate rollout.
