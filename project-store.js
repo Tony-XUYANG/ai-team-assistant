@@ -42,7 +42,10 @@ function createProjectStore(pool) {
           AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)) AS open_actions,
         (SELECT count(*)::int FROM public.project_entries e WHERE e.project_id = p.id
           AND e.kind = 'blocker' AND e.status = 'open'
-          AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)) AS open_blockers
+          AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)) AS open_blockers,
+        (SELECT count(*)::int FROM public.project_entries e WHERE e.project_id = p.id
+          AND e.verification = 'unverified'
+          AND NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id)) AS unverified_entries
       FROM public.projects p ORDER BY p.created_at DESC, p.id DESC LIMIT $1 OFFSET $2`,
     [options.limit + 1, options.offset])).rows;
     return page(rows, "projects", options);

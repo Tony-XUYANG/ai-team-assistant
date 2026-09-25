@@ -1,4 +1,4 @@
-# Local Project Workbench (3.6.0)
+# Local Project Workbench (3.7.0)
 
 Resume a project from saved objectives, sources, progress, decisions, blockers,
 and actions. This is a local JavaScript/Node.js and PostgreSQL preview, without
@@ -44,11 +44,13 @@ backup command targets the older lab, not this new workspace database.
 
 ## Workflows and limits
 
-The left navigation selects or creates a project. Search filters loaded project
-names; use Load more to include later pages. The three views provide a handoff
-brief, immutable record history, and project objectives/constraints/sources. The
-copy button turns the loaded brief into Markdown for review before a person
-pastes it into an authorized work channel or AI tool.
+The project overview compares loaded projects by active actions, blockers, and
+unverified records. Search, status filters, and sorting stay local to the
+loaded page; use Load more to include later pages. Selecting a project opens its
+workspace. The three views provide a handoff brief, immutable record history,
+and project objectives/constraints/sources. The copy button turns the loaded
+brief into Markdown for review before a person pastes it into an authorized
+work channel or AI tool.
 Project metadata can be created but is not editable in this version.
 
 Every progress, decision, blocker, and action record requires a source. New and

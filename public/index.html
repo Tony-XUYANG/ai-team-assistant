@@ -15,6 +15,7 @@
   <div id="sidebar-backdrop" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="项目导航">
     <div class="brand"><span class="brand-mark"><i data-lucide="panels-top-left"></i></span><div><strong>协作台</strong><span>AI 团队助手 · 本地版</span></div><button class="icon-button mobile-only" id="close-nav" aria-label="关闭项目导航" title="关闭项目导航"><i data-lucide="x"></i></button></div>
+    <a class="overview-nav" id="overview-nav" href="#view=overview"><i data-lucide="layout-dashboard"></i>项目总览</a>
     <div class="sidebar-heading"><h2>我的项目</h2><button class="icon-button" id="new-project" aria-label="新建项目" title="新建项目"><i data-lucide="plus"></i></button></div>
     <label class="search"><i data-lucide="search"></i><input id="project-search" type="search" aria-label="搜索已加载项目" placeholder="搜索已加载项目" maxlength="120"></label>
     <div id="projects-error" class="inline-error" role="alert" hidden></div>
@@ -29,6 +30,20 @@
       <div id="page-error" class="error-banner" role="alert" hidden></div>
       <div id="loading" class="empty-state" hidden><i data-lucide="loader-circle"></i><p>正在读取项目…</p></div>
       <section id="welcome" class="empty-state" hidden><i data-lucide="folder-plus"></i><h1>从一个项目开始</h1><p>还没有项目</p><button class="primary" id="welcome-create"><i data-lucide="plus"></i>新建项目</button></section>
+      <section id="overview-view" aria-labelledby="overview-title" hidden>
+        <header class="overview-heading"><div><p class="eyebrow">个人工作空间</p><h1 id="overview-title">项目总览</h1></div><button class="primary" id="overview-create"><i data-lucide="plus"></i>新建项目</button></header>
+        <p id="overview-scope" class="subtle" aria-live="polite"></p>
+        <div id="overview-error" class="inline-error" role="alert" hidden></div>
+        <div id="overview-stats" class="overview-stats" aria-label="已加载项目统计" hidden></div>
+        <div id="overview-controls" class="overview-controls" hidden>
+          <label class="search overview-search"><i data-lucide="search"></i><input id="overview-search" type="search" aria-label="搜索总览中已加载项目" placeholder="搜索已加载项目" maxlength="120"></label>
+          <label>项目状态<select id="overview-status"><option value="all">全部状态</option><option value="active">进行中</option><option value="paused">已暂停</option><option value="archived">已归档</option></select></label>
+          <label>排序<select id="overview-sort"><option value="updated">最近更新</option><option value="blockers">阻塞优先</option><option value="actions">待办优先</option><option value="name">项目名称</option></select></label>
+        </div>
+        <div class="overview-results-heading"><h2>项目列表</h2><span id="overview-result-count" class="subtle" aria-live="polite"></span></div>
+        <div id="overview-list" class="overview-list"></div>
+        <button class="secondary load-more" id="overview-more" hidden><i data-lucide="chevrons-down"></i>加载更多项目</button>
+      </section>
       <div id="project-view" hidden>
         <section class="project-heading"><div><div class="eyebrow">项目工作台 <span id="project-status" class="badge"></span></div><h1 id="project-name"></h1><p id="project-objective"></p></div><button class="primary" id="new-entry"><i data-lucide="plus"></i>添加记录</button></section>
         <div class="view-bar"><div class="tabs" role="tablist" aria-label="项目视图"><button role="tab" id="tab-brief" aria-controls="panel-brief" aria-selected="true" tabindex="0" data-tab="brief">交接简报</button><button role="tab" id="tab-history" aria-controls="panel-history" aria-selected="false" tabindex="-1" data-tab="history">记录历史</button><button role="tab" id="tab-info" aria-controls="panel-info" aria-selected="false" tabindex="-1" data-tab="info">项目资料</button></div><span class="updated" id="snapshot-time"></span></div>

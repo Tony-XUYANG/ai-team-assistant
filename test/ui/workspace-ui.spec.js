@@ -44,10 +44,10 @@ test("empty state opens project form and missing data remains a visible error", 
   await expect(page.getByRole("heading", { name: "从一个项目开始" })).toBeVisible();
   await page.locator("#welcome-create").click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  await page.getByLabel("项目名称").fill("未保存项目");
+  await page.getByLabel("项目名称", { exact: true }).fill("未保存项目");
   page.once("dialog", dialog => dialog.dismiss());
   await page.getByRole("button", { name: "取消", exact: true }).click();
-  await expect(page.getByLabel("项目名称")).toHaveValue("未保存项目");
+  await expect(page.getByLabel("项目名称", { exact: true })).toHaveValue("未保存项目");
 });
 
 test("API failures keep draft and request ID without automatic resubmission", async ({ page }) => {
@@ -186,4 +186,24 @@ test("copy fallback shows the Markdown without claiming success", async ({ page 
   await expect(page.getByRole("alert")).toContainText("剪贴板不可用");
   await expect(page.locator("#copy-text")).toHaveValue(/# 项目交接简报/);
   await expect(page.getByRole("button", { name: "下载 Markdown" })).toBeVisible();
+});
+
+test("project overview compares loaded work without opening every brief", async ({ page }) => {
+  const overviewProjects = [
+    { id, name: "网站发布", objective: "把审阅后的首页发布出去", status: "active", updated_at: "2026-09-25T01:00:00.000Z", open_actions: 2, open_blockers: 1, unverified_entries: 3 },
+    { id: "42345678-1234-4123-8123-123456789abc", name: "运营交接", objective: "整理本周客户反馈", status: "paused", updated_at: "2026-09-24T01:00:00.000Z", open_actions: 0, open_blockers: 0, unverified_entries: 1 },
+  ];
+  await page.route("**/projects?*", route => route.fulfill({ json: { projects: overviewProjects, next_offset: null } }));
+  await page.goto("/#view=overview");
+  await expect(page.getByRole("heading", { name: "项目总览" })).toBeVisible();
+  await expect(page.getByText("已加载 2 个项目 · 已全部加载")).toBeVisible();
+  await expect(page.getByText("未完成待办").first()).toBeVisible();
+  await expect(page.locator(".overview-project")).toHaveCount(2);
+  await expect(page.locator(".overview-project-counts [data-metric=\"open_blockers\"] dd").first()).toHaveText("1");
+  await page.locator("#overview-status").selectOption("paused");
+  await expect(page.locator(".overview-project")).toHaveCount(1);
+  await expect(page.getByRole("link", { name: /运营交接/ })).toHaveAttribute("href", /project=42345678/);
+  await page.locator("#overview-status").selectOption("all");
+  await page.getByRole("link", { name: /网站发布/ }).click();
+  await expect(page).toHaveURL(/project=12345678/);
 });

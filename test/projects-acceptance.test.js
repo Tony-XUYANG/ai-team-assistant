@@ -28,6 +28,7 @@ test("projects persist objectives, constraints and sources and paginate results"
   assert.equal(list.data.projects.length, 1);
   assert.equal(list.data.projects[0].id, project.id);
   assert.equal(list.data.projects[0].open_actions, 0);
+  assert.equal(list.data.projects[0].unverified_entries, 0);
   assert.ok(project.source.captured_at);
 });
 
@@ -74,6 +75,7 @@ test("revisions close actions and blockers without deleting history or retaining
   const list = (await request("/projects?limit=1")).data.projects[0];
   assert.equal(list.open_actions, 0);
   assert.equal(list.open_blockers, 0);
+  assert.equal(list.unverified_entries, 0);
 });
 
 test("projects cannot reference each other's records and missing predecessors return 404", async () => {

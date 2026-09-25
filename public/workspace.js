@@ -2,7 +2,8 @@
 
 const $ = selector => document.querySelector(selector);
 const state = { projects: [], next: 0, id: null, project: null, brief: null, history: [],
-  historyNext: 0, view: "brief", generation: 0, listGeneration: 0, historyGeneration: 0, saving: false, editor: null };
+  historyNext: 0, view: "brief", generation: 0, listGeneration: 0, historyGeneration: 0, saving: false, editor: null,
+  projectsLoaded: false, projectsLoading: false, projectsError: null, projectsUpdatedAt: null };
 const { labels, sections, toMarkdown } = window.BriefFormat;
 
 function el(tag, className, value) {
@@ -65,24 +66,37 @@ function navigate(id, view = "brief") {
   location.hash = next;
 }
 async function loadProjects(append = false) {
+  if (append && (state.projectsLoading || state.next === null)) return;
   const generation = ++state.listGeneration;
   const offset = append ? state.next : 0;
+  state.projectsLoading = true; state.projectsError = null;
   $("#more-projects").disabled = true;
   $("#projects-error").hidden = true;
+  renderOverview();
   try {
     const data = await api(`/projects?limit=50&offset=${offset}`);
     if (generation !== state.listGeneration) return;
     state.projects = append ? [...new Map([...state.projects, ...data.projects].map(p => [p.id, p])).values()] : data.projects;
     state.next = data.next_offset;
+    state.projectsLoaded = true; state.projectsUpdatedAt = new Date().toISOString();
     renderProjects();
-    if (!state.id) {
-      if (state.projects.length) navigate(state.projects[0].id);
-      else { $("#welcome").hidden = false; $("#project-view").hidden = true; }
+  } catch (error) {
+    if (generation === state.listGeneration) {
+      state.projectsError = error;
+      showError("#projects-error", error);
+      $("#projects-error").append(button("重试", "refresh-cw", () => loadProjects(append), "text-button"));
     }
-  } catch (error) { if (generation === state.listGeneration) showError("#projects-error", error); }
-  finally { if (generation === state.listGeneration) $("#more-projects").disabled = false; }
+  } finally {
+    if (generation === state.listGeneration) {
+      state.projectsLoading = false;
+      $("#more-projects").disabled = false;
+      renderOverview();
+    }
+  }
 }
 function renderProjects() {
+  if (!state.id) $("#overview-nav").setAttribute("aria-current", "page");
+  else $("#overview-nav").removeAttribute("aria-current");
   const container = $("#project-list"); container.replaceChildren();
   const term = $("#project-search").value.trim().toLocaleLowerCase();
   const projects = state.projects.filter(p => p.name.toLocaleLowerCase().includes(term));
@@ -99,10 +113,80 @@ function renderProjects() {
   $("#more-projects").hidden = state.next === null;
   icons();
 }
+function showOverview() {
+  ++state.generation; ++state.historyGeneration;
+  state.id = null; state.project = null; state.brief = null; state.history = []; state.view = "overview";
+  $("#project-view").hidden = true; $("#loading").hidden = true; $("#page-error").hidden = true;
+  $("#breadcrumb-name").textContent = "项目总览";
+  renderProjects(); renderOverview();
+}
+function projectCount(project, key) {
+  const value = project[key];
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+function renderOverview() {
+  if (state.id) return;
+  const empty = state.projectsLoaded && !state.projects.length && !state.projectsError && !state.projectsLoading;
+  $("#welcome").hidden = !empty; $("#overview-view").hidden = empty;
+  $("#overview-view").setAttribute("aria-busy", String(state.projectsLoading));
+  $("#overview-scope").textContent = state.projectsLoaded
+    ? `已加载 ${state.projects.length} 个项目${state.next !== null ? " · 还有更多项目未加载" : " · 已全部加载"} · 列表更新 ${date(state.projectsUpdatedAt)}${state.projectsLoading ? " · 正在更新…" : ""}`
+    : state.projectsLoading ? "正在加载项目…" : "尚未加载项目";
+  $("#overview-error").hidden = !state.projectsError;
+  if (state.projectsError) {
+    showError("#overview-error", state.projectsError);
+    if (state.projectsLoaded) $("#overview-error").append(document.createTextNode(" 显示上次已加载的数据，尚未刷新成功。"));
+    $("#overview-error").append(button("重新加载项目", "refresh-cw", () => loadProjects(), "text-button"));
+  }
+  $("#overview-stats").hidden = !state.projectsLoaded;
+  $("#overview-controls").hidden = !state.projectsLoaded;
+  $("#overview-more").hidden = !state.projectsLoaded || state.next === null;
+  $("#overview-more").disabled = state.projectsLoading;
+  const stats = $("#overview-stats"); stats.replaceChildren();
+  const metrics = [["open_actions", "未完成待办", "list-todo"], ["open_blockers", "未解决阻塞", "circle-alert"], ["unverified_entries", "待确认记录", "circle-help"]];
+  for (const [key, label, symbol] of metrics) {
+    const values = state.projects.map(project => projectCount(project, key));
+    const total = values.some(value => value === null) ? "未知" : values.reduce((sum, value) => sum + value, 0);
+    const stat = el("div", "overview-stat"); stat.dataset.metric = key;
+    const heading = el("div", "overview-stat-label"); heading.append(icon(symbol), document.createTextNode(label));
+    stat.append(heading, el("strong", "overview-stat-value", total), el("small", "", key === "unverified_entries" ? "当前记录 · 不含有争议" : "当前记录 · 含待确认和有争议"));
+    stats.append(stat);
+  }
+  const term = $("#overview-search").value.trim().toLocaleLowerCase(), status = $("#overview-status").value;
+  const projects = state.projects.filter(project => project.name.toLocaleLowerCase().includes(term)
+    && (status === "all" || project.status === status));
+  const order = $("#overview-sort").value;
+  projects.sort((a, b) => {
+    const name = a.name.localeCompare(b.name, "zh-CN") || a.id.localeCompare(b.id);
+    if (order === "name") return name;
+    const recent = (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0);
+    if (order === "updated") return recent || name;
+    const key = order === "blockers" ? "open_blockers" : "open_actions";
+    return (projectCount(b, key) ?? -1) - (projectCount(a, key) ?? -1) || recent || name;
+  });
+  $("#overview-result-count").textContent = state.projectsLoaded ? `${projects.length} / ${state.projects.length} 个已加载项目` : "";
+  const container = $("#overview-list"); container.replaceChildren();
+  if (state.projectsLoaded && !projects.length) container.append(el("p", "section-empty", "已加载项目中没有匹配结果"));
+  for (const project of projects) {
+    const card = el("article", "overview-project"); card.dataset.projectId = project.id;
+    const header = el("div", "overview-project-heading"), heading = el("h3"), link = el("a", "overview-project-link", project.name);
+    link.href = `#project=${project.id}&view=brief`; link.append(icon("arrow-up-right")); heading.append(link);
+    header.append(heading, badge(labels.project[project.status] || "未知", project.status === "active" ? "green" : ""));
+    const counts = el("dl", "overview-project-counts");
+    for (const [key, label] of metrics) {
+      const group = el("div"); group.dataset.metric = key;
+      group.append(el("dt", "", label), el("dd", "", projectCount(project, key) ?? "未知")); counts.append(group);
+    }
+    card.append(header, el("p", "overview-objective", project.objective), counts,
+      el("p", "subtle overview-updated", "最后更新 " + date(project.updated_at)));
+    container.append(card);
+  }
+  icons();
+}
 async function loadProject(id, view = state.view) {
   const generation = ++state.generation;
   state.id = id; state.project = null; state.brief = null; state.history = []; state.historyNext = 0;
-  $("#page-error").hidden = true; $("#project-view").hidden = true; $("#welcome").hidden = true; $("#loading").hidden = false;
+  $("#page-error").hidden = true; $("#project-view").hidden = true; $("#overview-view").hidden = true; $("#welcome").hidden = true; $("#loading").hidden = false;
   renderProjects();
   try {
     const brief = await api(`/projects/${id}/brief`);
@@ -241,7 +325,7 @@ function route() {
   const params = new URLSearchParams(location.hash.slice(1)), id = params.get("project"), view = params.get("view") || "brief";
   if (id && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(id)) {
     if (state.id === id && state.brief) selectTab(view); else loadProject(id, view);
-  } else if (state.projects.length) navigate(state.projects[0].id);
+  } else showOverview();
 }
 const form = $("#editor-form"), field = name => form.elements.namedItem(name);
 function updateStatuses(value) {
@@ -334,6 +418,12 @@ field("kind").addEventListener("change", () => updateStatuses());
 field("source_kind").addEventListener("change", sourceTypeChanged);
 $("#new-project").addEventListener("click", () => { toggleNav(false); openEditor("project"); });
 $("#welcome-create").addEventListener("click", () => openEditor("project"));
+$("#overview-create").addEventListener("click", () => openEditor("project"));
+$("#overview-nav").addEventListener("click", () => toggleNav(false));
+$("#overview-search").addEventListener("input", renderOverview);
+$("#overview-status").addEventListener("change", renderOverview);
+$("#overview-sort").addEventListener("change", renderOverview);
+$("#overview-more").addEventListener("click", () => loadProjects(true));
 $("#new-entry").addEventListener("click", () => openEditor("entry"));
 $("#refresh").addEventListener("click", async () => { if (state.id) await loadProject(state.id, state.view); await loadProjects(); });
 $("#project-search").addEventListener("input", renderProjects);

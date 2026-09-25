@@ -19,7 +19,7 @@ function sections() {
   return Object.fromEntries(Object.entries(values).map(([key, records]) => [key, { entries: records, total: records.length, truncated: false }]));
 }
 const database = {
-  async listProjects() { return { projects: [{ ...project, open_actions: entries.filter(e => e.is_current && e.kind === "action" && ["todo", "doing"].includes(e.status)).length, open_blockers: 0 }], limit: 50, offset: 0, has_more: false, next_offset: null }; },
+  async listProjects() { return { projects: [{ ...project, open_actions: entries.filter(e => e.is_current && e.kind === "action" && ["todo", "doing"].includes(e.status)).length, open_blockers: 0, unverified_entries: entries.filter(e => e.is_current && e.verification === "unverified").length }], limit: 50, offset: 0, has_more: false, next_offset: null }; },
   async getProject(id) { return id === projectId ? project : null; },
   async getProjectBrief(id) { return id === projectId ? { project, generated_at: now, mode: "recorded_context", verification_basis: "caller_asserted", sections: sections() } : null; },
   async listProjectEntries(id) { return id === projectId ? { entries: entries.map(entry => ({ ...entry })), limit: 50, offset: 0, has_more: false, next_offset: null } : null; },

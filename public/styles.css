@@ -53,3 +53,47 @@ main{background:#fff}
 .entry-tags .badge.green{background:#fff0db;color:#9a4709}
 .page-footer{border-top-color:#d8e6eb}
 @media(max-width:780px){.project-heading{padding:17px 16px 20px;margin-bottom:18px}.stats .stat,.stats .stat:first-child{padding:12px 10px;border-left-width:3px}.context-section .section-heading h2{padding:8px 10px}.context-section .entry{padding-left:9px}}
+
+/* The overview is the multi-project starting point: white canvas, distinct status accents. */
+.overview-nav{display:flex;align-items:center;gap:9px;margin:0 0 22px;padding:10px 11px;border:1px solid #d4e5e6;border-radius:6px;color:#087f73;text-decoration:none;font-size:13px;font-weight:600;background:#f3fbfa}
+.overview-nav svg{width:16px;height:16px}
+.overview-nav[aria-current="page"]{border-color:#8fcfc7;background:#dff3f0;box-shadow:0 4px 12px #1a686414}
+.overview-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:26px;padding:18px 20px 22px;border-bottom:1px solid #dbe7ec;border-left:4px solid #087f73;margin-bottom:12px}
+.overview-heading h1{color:#102c43}
+.overview-heading .primary{margin-top:27px}
+.overview-scope{margin:0 0 22px}
+.overview-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:26px}
+.overview-stat{min-width:0;padding:15px 17px;border:1px solid #f3c799;border-left:4px solid #c65c0b;border-radius:6px;background:#fff4e8}
+.overview-stat:nth-child(2){border-color:#f0c6c0;border-left-color:#c94a4a;background:#fff1f0}
+.overview-stat:nth-child(3){border-color:#eed39a;border-left-color:#d8962c;background:#fff8e8}
+.overview-stat-label{display:flex;align-items:center;gap:7px;color:#9a4709;font-size:11px}
+.overview-stat:nth-child(2) .overview-stat-label{color:#a83939}
+.overview-stat:nth-child(3) .overview-stat-label{color:#a9670e}
+.overview-stat-label svg{width:15px;height:15px}
+.overview-stat-value{display:block;margin-top:8px;color:#26383e;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.overview-stat small{display:block;margin-top:7px;color:#697570;font-size:10px;line-height:1.5}
+.overview-controls{display:grid;grid-template-columns:minmax(0,1fr) 150px 150px;align-items:end;gap:13px;margin-bottom:26px}
+.overview-controls label{font-size:12px;color:#53666e}
+.overview-controls select{min-height:40px;margin-top:6px}
+.overview-search{margin:0;min-height:40px}
+.overview-search input{min-height:38px}
+.overview-results-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #dce6eb}
+.overview-results-heading h2{font-size:15px;color:#1f4f78}
+.overview-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.overview-project{min-width:0;padding:18px;border:1px solid #d8e6eb;border-top:4px solid #1d62c6;border-radius:6px;background:#fff;box-shadow:0 4px 14px #1942580d}
+.overview-project:hover{border-color:#a8c9f4;box-shadow:0 6px 18px #19425816}
+.overview-project-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.overview-project-heading h3{min-width:0;font-size:16px;line-height:1.5}
+.overview-project-link{display:inline-flex;align-items:center;gap:5px;color:#164b8e;text-decoration:none;overflow-wrap:anywhere}
+.overview-project-link:hover{text-decoration:underline}
+.overview-project-link svg{width:14px;height:14px}
+.overview-objective{min-height:50px;margin-top:10px;color:#627281;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.overview-project-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0 13px;padding-top:13px;border-top:1px solid #edf1f2}
+.overview-project-counts div{min-width:0}
+.overview-project-counts dt{color:#697570;font-size:10px;line-height:1.5}
+.overview-project-counts dd{margin:4px 0 0;color:#26383e;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums}
+.overview-project-counts [data-metric="open_blockers"] dd{color:#b33f3f}
+.overview-project-counts [data-metric="unverified_entries"] dd{color:#a9670e}
+.overview-updated{font-size:10px}
+@media(max-width:900px){.overview-list{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:780px){.overview-heading{padding:17px 16px 20px;gap:13px}.overview-heading .primary{margin-top:23px;font-size:12px;padding:9px 11px}.overview-stats{gap:10px}.overview-stat{padding:12px 10px;border-left-width:3px}.overview-stat-value{font-size:25px}.overview-stat small{display:none}.overview-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.overview-search{grid-column:1/-1}.overview-project{padding:15px}.overview-project-counts{gap:6px}}

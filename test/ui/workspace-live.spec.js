@@ -16,7 +16,7 @@ test("real workbench persists a completed action and preserves its history", asy
   const content = "Verify a completed task survives a page reload";
   await page.goto("/");
   await page.getByRole("button", { name: "\u65b0\u5efa\u9879\u76ee", exact: true }).first().click();
-  await page.getByLabel("\u9879\u76ee\u540d\u79f0").fill(name);
+  await page.getByLabel("\u9879\u76ee\u540d\u79f0", { exact: true }).fill(name);
   await page.getByLabel("\u9879\u76ee\u76ee\u6807").fill("Synthetic workbench acceptance, no confidential data");
   await page.getByLabel("\u6765\u6e90\u540d\u79f0").fill("Automated browser acceptance");
   const createdResponse = page.waitForResponse(r => r.url() === `${target.origin}/projects` && r.request().method() === "POST");
