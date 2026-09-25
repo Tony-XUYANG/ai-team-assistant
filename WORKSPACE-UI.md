@@ -1,9 +1,14 @@
-# Local Project Workbench (3.8.0)
+# Local Project Workbench (3.9.0)
 
 Resume a project from saved objectives, sources, progress, decisions, blockers,
 and actions. This is a local JavaScript/Node.js and PostgreSQL preview, without
 an AI provider, login, tenant isolation, or team permissions. Do not expose the
 service publicly or enter sensitive team information.
+
+The workbench now calls `/api/v1/projects` and its child routes. Existing
+unversioned project routes remain compatible. The machine-readable contract and
+future native-client boundaries are documented in [MULTIPLATFORM.md](MULTIPLATFORM.md).
+No visual redesign, login or database migration is part of this change.
 
 ## Start and stop
 

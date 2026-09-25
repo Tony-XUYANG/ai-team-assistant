@@ -9,7 +9,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("desktop workbench shows current project context and records a completed action", async ({ page }) => {
+  const briefResponse = page.waitForResponse(r => new URL(r.url()).pathname === `/api/v1/projects/${id}/brief`);
   await page.goto("/#project=12345678-1234-4123-8123-123456789abc");
+  expect((await briefResponse).headers()["x-api-version"]).toBe("1");
   await expect(page.getByRole("heading", { name: "网站发布" })).toBeVisible();
   await expect(page.getByText("检查首页移动端表现")).toBeVisible();
   await expect(page.getByText("已确认待办", { exact: true })).toBeVisible();

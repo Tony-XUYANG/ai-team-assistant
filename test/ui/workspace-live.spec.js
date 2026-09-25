@@ -19,10 +19,11 @@ test("real workbench persists a completed action and preserves its history", asy
   await page.getByLabel("\u9879\u76ee\u540d\u79f0", { exact: true }).fill(name);
   await page.getByLabel("\u9879\u76ee\u76ee\u6807").fill("Synthetic workbench acceptance, no confidential data");
   await page.getByLabel("\u6765\u6e90\u540d\u79f0").fill("Automated browser acceptance");
-  const createdResponse = page.waitForResponse(r => r.url() === `${target.origin}/projects` && r.request().method() === "POST");
+  const createdResponse = page.waitForResponse(r => r.url() === `${target.origin}/api/v1/projects` && r.request().method() === "POST");
   await page.getByRole("button", { name: "\u4fdd\u5b58", exact: true }).click();
   const created = await createdResponse;
   expect(created.status()).toBe(201);
+  expect(created.headers()["x-api-version"]).toBe("1");
   const project = await created.json();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 
@@ -48,7 +49,7 @@ test("real workbench persists a completed action and preserves its history", asy
   await expect(page.locator("#history-list .entry")).toHaveCount(2);
   await expect(page.getByText("\u5df2\u88ab\u66f4\u6b63", { exact: true })).toBeVisible();
 
-  const historyResponse = await request.get(`/projects/${project.id}/entries`);
+  const historyResponse = await request.get(`/api/v1/projects/${project.id}/entries`);
   expect(historyResponse.ok()).toBe(true);
   const { entries } = await historyResponse.json();
   expect(entries).toHaveLength(2);

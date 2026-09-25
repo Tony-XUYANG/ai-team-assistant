@@ -27,6 +27,7 @@ DATABASE-ACCESS.md
 PRODUCT-DIRECTION.md
 PROJECT-WORKSPACE.md
 WORKSPACE-UI.md
+MULTIPLATFORM.md
 .workspace
 .ui-artifacts
 playwright-report

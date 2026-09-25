@@ -7,6 +7,7 @@ const { version } = require("./package.json");
 const { log: defaultLog, requestId, safeErrorCode } = require("./logger");
 
 const { projectRoute, handleProjectRequest } = require("./projects");
+const apiContract = require("./api/openapi.json");
 
 const maxBodyBytes = 16 * 1024;
 const methods = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
@@ -22,8 +23,18 @@ const staticFiles = new Map([
 ]);
 
 function sendJson(response, statusCode, body) {
+  if (statusCode >= 400 && response.getHeader("X-API-Version") === "1") {
+    const codes = { 400: "validation_error", 403: "cross_origin_denied", 404: "not_found",
+      409: "revision_conflict", 413: "payload_too_large", 500: "internal_error", 503: "service_unavailable" };
+    body = { ...body, code: codes[statusCode] || "internal_error", request_id: response.getHeader("X-Request-ID") };
+  }
   response.writeHead(statusCode, { "Content-Type": "application/json" });
   response.end(JSON.stringify(body));
+}
+
+function projectPath(pathname) {
+  const candidate = pathname.startsWith("/api/v1/") ? pathname.slice("/api/v1".length) : pathname;
+  return projectRoute(candidate) ? candidate : null;
 }
 
 function readJson(request) {
@@ -60,6 +71,9 @@ function createServer({ database, log = defaultLog }) {
   }
 
   async function handle(request, response, pathname) {
+    if (request.method === "GET" && pathname === "/api/v1/openapi.json") {
+      return sendJson(response, 200, apiContract);
+    }
     if (["GET", "HEAD"].includes(request.method) && staticFiles.has(pathname)) {
       const [file, contentType] = staticFiles.get(pathname);
       try {
@@ -70,9 +84,10 @@ function createServer({ database, log = defaultLog }) {
         return sendJson(response, 404, { error: "not found" });
       }
     }
-    if (projectRoute(pathname)) {
+    const projectsPath = projectPath(pathname);
+    if (projectsPath) {
       response.setHeader("Cache-Control", "no-store");
-      return handleProjectRequest({ request, response, pathname, query, readJson, sendJson });
+      return handleProjectRequest({ request, response, pathname: projectsPath, query, readJson, sendJson });
     }
     if (request.method === "GET" && pathname === "/version") {
       response.setHeader("Cache-Control", "no-store");
@@ -139,9 +154,17 @@ function createServer({ database, log = defaultLog }) {
     let malformed = false;
     try {
       pathname = new URL(request.url, "http://localhost").pathname;
+      const versioned = pathname === "/api/v1" || pathname.startsWith("/api/v1/");
+      if (versioned) {
+        response.setHeader("X-API-Version", "1");
+        response.setHeader("Cache-Control", "no-store");
+      }
+      const projectsPath = projectPath(pathname);
       context.route = knownRoutes.has(pathname) ? pathname
         : /^\/links\/[a-f0-9]{8}$/.test(pathname) ? "/links/:code"
-        : /^\/[a-f0-9]{8}$/.test(pathname) ? "/:code" : projectRoute(pathname) || (staticFiles.has(pathname) ? "/workspace" : "unmatched");
+        : /^\/[a-f0-9]{8}$/.test(pathname) ? "/:code"
+        : projectsPath ? (versioned ? "/api/v1" : "") + projectRoute(projectsPath)
+        : pathname === "/api/v1/openapi.json" ? pathname : (staticFiles.has(pathname) ? "/workspace" : "unmatched");
     } catch { malformed = true; }
 
     let logged = false;

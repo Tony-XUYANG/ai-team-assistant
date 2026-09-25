@@ -10,6 +10,7 @@ const { assertOwnedContainer, assertDatabaseIsolation } = require("./backup-supp
 const { unitFiles, acceptanceFiles, testSummary, validateImage, sourceFingerprint, redactDiagnostics } = require("./ci-support");
 const { verifyMigrationResults } = require("./title-release-support");
 const { projectSummarySql } = require("./backup-support");
+const { createContractValidator } = require("./api-contract-support");
 
 const execute = promisify(execFile);
 const project = path.resolve(__dirname, "..");
@@ -43,7 +44,7 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
   const docker = (...args) => run(dockerPath, args);
   async function installTests() {
     const files = [];
-    const installed = [...acceptanceFiles, "test/projects-database.test.cjs"];
+    const installed = [...acceptanceFiles, "test/projects-database.test.cjs", "test/api-contract-samples.cjs"];
     for (const name of installed) files.push({ name, data: (await fs.readFile(path.join(project, name))).toString("base64") });
     const installer = `
       const fs=require('node:fs');
@@ -159,6 +160,13 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
     report.candidate = { files: acceptanceFiles, ...testSummary(acceptance),
       database: "isolated tmpfs PostgreSQL", sourceCredentialsUsed: false };
     await fs.writeFile(path.join(runDir, "candidate.tap"), acceptance + "\n");
+    report.phase = "api-contract";
+    const samples = JSON.parse(await docker("exec", apiName, "node", "test/api-contract-samples.cjs"));
+    const contractValidator = createContractValidator();
+    for (const sample of samples) contractValidator.response(sample);
+    report.apiContract = { version: "1", responses: samples.length, verified: true };
+    await fs.writeFile(path.join(runDir, "api-contract-samples.json"), JSON.stringify(samples, null, 2) + "\n");
+    report.phase = "candidate-integration";
     const databaseTests = await docker("exec", "--env", "SHORTENER_CI_FIXTURE=isolated-tmpfs", apiName,
       "node", "--test", "--test-reporter=tap", "test/projects-database.test.cjs");
     report.database = testSummary(databaseTests);

@@ -129,3 +129,33 @@ test("quoted and Unicode content round trips without becoming SQL", async () => 
   const brief = (await request(`/projects/${project.id}/brief`)).data;
   assert.equal(brief.sections.confirmed_facts.entries[0].content, content);
 });
+
+test("v1 API creates records shared with legacy routes and serves its contract", async () => {
+  const spec = await fetch(base + "/api/v1/openapi.json", { signal: AbortSignal.timeout(5000) });
+  assert.equal(spec.status, 200);
+  assert.equal(spec.headers.get("x-api-version"), "1");
+  const contract = await spec.json();
+  assert.equal(contract.openapi, "3.1.0");
+  assert.equal(contract.servers[0].url, "/api/v1");
+  const project = (await request("/api/v1/projects", {
+    name: "Versioned acceptance " + randomUUID(), objective: "Native API compatibility", source,
+  })).data;
+  assert.ok(project.id);
+  assert.deepEqual((await request(`/projects/${project.id}`)).data, project);
+  const first = (await add(project, { kind: "action", verification: "confirmed" })).data;
+  const revision = await request(`/api/v1/projects/${project.id}/entries`, {
+    kind: "action", content: "Completed through v1", status: "done", verification: "confirmed", source, supersedes_id: first.id,
+  });
+  assert.equal(revision.status, 201);
+  const oldHistory = (await request(`/projects/${project.id}/entries`)).data;
+  const newHistory = (await request(`/api/v1/projects/${project.id}/entries`)).data;
+  assert.deepEqual(newHistory, oldHistory);
+  assert.equal(newHistory.entries.length, 2);
+  assert.equal(newHistory.entries.find(entry => entry.is_current).id, revision.data.id);
+  const brief = (await request(`/api/v1/projects/${project.id}/brief`)).data;
+  assert.equal(brief.sections.closed.entries[0].id, revision.data.id);
+  const invalid = await request("/api/v1/projects?limit=101");
+  assert.equal(invalid.status, 400);
+  assert.equal(invalid.data.code, "validation_error");
+  assert.ok(invalid.data.request_id);
+});

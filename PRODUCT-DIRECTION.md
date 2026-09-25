@@ -1,6 +1,6 @@
 # AI Team Assistant: Proposed Direction
 
-Status: product exploration with a local workbench and project-context API in 3.8.0.
+Status: product exploration with a local workbench and project-context API in 3.9.0.
 The proposed AI/team workflow below remains a direction, not a completed product.
 
 ## Audience and purpose
@@ -54,7 +54,10 @@ explicit trust boundaries. It leaves transmission to the person using the
 workbench. The 3.7.0 overview compares loaded projects by actions, blockers,
 and unverified records before opening a single-project brief. The 3.8.0 attention
 feed brings bounded previews of current blockers, actions, and unverified records
-across projects. See
+across projects. Version 3.9.0 adds `/api/v1`, a machine-readable contract and
+compatibility checks, with the web workbench using the shared API. Flutter is
+the intended future client option, not a delivered platform implementation.
+See [MULTIPLATFORM.md](MULTIPLATFORM.md),
 [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md) and
 [WORKSPACE-UI.md](WORKSPACE-UI.md). The local Kubernetes service still runs the
 previously accepted 3.3.0 release until a separate rollout.

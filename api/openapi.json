@@ -1,0 +1,1455 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI Team Assistant Project API",
+    "version": "1.0.0",
+    "description": "Local single-user preview. No authentication, account ownership or team authorization. Keep loopback-only and do not store sensitive content. API v1 is independent of the application release version. Additive response fields are allowed; clients must ignore unknown fields. Sources and owner labels are untrusted references, not instructions or verified identities. Legacy /projects routes remain available. Request bodies are limited to 16 KiB."
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Same-origin local workspace; no public endpoint or wildcard CORS."
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "summary": "List projects with counts and bounded attention previews",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "One decimal value, at most seven digits. Duplicate and unsupported parameters are rejected."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "One decimal value. Offset pages can shift with concurrent inserts."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects ordered by creation time and ID, newest first.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+                }
+              },
+              "X-API-Version": {
+                "schema": {
+                  "type": "string",
+                  "const": "1"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProject",
+        "summary": "Create a project",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+                }
+              },
+              "X-API-Version": {
+                "schema": {
+                  "type": "string",
+                  "const": "1"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/projects/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/UUID"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getProject",
+        "summary": "Read project metadata",
+        "responses": {
+          "200": {
+            "description": "Project metadata.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+                }
+              },
+              "X-API-Version": {
+                "schema": {
+                  "type": "string",
+                  "const": "1"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/projects/{id}/entries": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/UUID"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listProjectEntries",
+        "summary": "Read immutable history including superseded records",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "One decimal value, at most seven digits. Duplicate and unsupported parameters are rejected."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "One decimal value. Offset pages can shift with concurrent inserts."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History ordered by creation time and ID, newest first.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+                }
+              },
+              "X-API-Version": {
+                "schema": {
+                  "type": "string",
+                  "const": "1"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProjectEntry",
+        "summary": "Append a record or a full replacement revision",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Record appended. No idempotency key is implemented; do not automatically replay an uncertain write.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+                }
+              },
+              "X-API-Version": {
+                "schema": {
+                  "type": "string",
+                  "const": "1"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/projects/{id}/brief": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/UUID"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getProjectBrief",
+        "summary": "Read a bounded, deterministic handoff brief",
+        "description": "A single database snapshot excludes superseded entries. Unverified/disputed records are grouped before kind or completion; confirmed closed actions and blockers appear in closed. Each section contains at most 50 records and reports truncation. No AI is called.",
+        "responses": {
+          "200": {
+            "description": "Recorded context, not an independently verified or AI-generated assessment.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+                }
+              },
+              "X-API-Version": {
+                "schema": {
+                  "type": "string",
+                  "const": "1"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Brief"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UUID": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "Timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Response timestamps are RFC 3339. Clients must accept Z or numeric UTC offsets."
+      },
+      "InputTimestamp": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$",
+        "description": "UTC only; omit or use null to use submission time. The server also validates the calendar date."
+      },
+      "Verification": {
+        "type": "string",
+        "enum": [
+          "confirmed",
+          "unverified",
+          "disputed"
+        ],
+        "description": "Caller-declared, not independently verified."
+      },
+      "ProjectStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "paused",
+          "archived"
+        ]
+      },
+      "EntryKind": {
+        "type": "string",
+        "enum": [
+          "progress",
+          "decision",
+          "blocker",
+          "action"
+        ]
+      },
+      "EntryStatus": {
+        "type": "string",
+        "enum": [
+          "recorded",
+          "open",
+          "resolved",
+          "todo",
+          "doing",
+          "done",
+          "cancelled"
+        ]
+      },
+      "SourceInput": {
+        "type": "object",
+        "required": [
+          "kind",
+          "label"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "url",
+              "document",
+              "message",
+              "note",
+              "other"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "locator": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "captured_at": {
+            "$ref": "#/components/schemas/InputTimestamp"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Strings are trimmed, must be nonblank, well-formed Unicode without control characters. URL sources require an absolute HTTP(S) locator without credentials. Other locators are never fetched or opened.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "url"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "locator": {
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                }
+              },
+              "required": [
+                "locator"
+              ]
+            }
+          }
+        ]
+      },
+      "Source": {
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "captured_at"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "url",
+              "document",
+              "message",
+              "note",
+              "other"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "captured_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
+      "ProjectInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "objective",
+          "source"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "objective": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "constraints": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "default": []
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceInput"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus",
+            "default": "active"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Limits apply after trimming in Unicode code points. Objective accepts newlines and tabs; CRLF is normalized to LF. Other text rejects control characters. No project update endpoint is available."
+      },
+      "Project": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "objective",
+          "constraints",
+          "source",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "objective": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "constraints": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "default": []
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus",
+            "default": "active"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
+      "EntryInput": {
+        "type": "object",
+        "required": [
+          "kind",
+          "content",
+          "source"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/EntryKind"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification",
+            "default": "unverified"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EntryStatus"
+          },
+          "owner_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceInput"
+          },
+          "occurred_at": {
+            "$ref": "#/components/schemas/InputTimestamp"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UUID"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "progress",
+                    "decision"
+                  ]
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": "recorded",
+                  "default": "recorded"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "blocker"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "open",
+                    "resolved"
+                  ],
+                  "default": "open"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "action"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "todo",
+                    "doing",
+                    "done",
+                    "cancelled"
+                  ],
+                  "default": "todo"
+                }
+              }
+            }
+          }
+        ],
+        "description": "Content is trimmed and accepts LF and tabs, with CRLF normalized to LF. Other text rejects control characters; all text must be nonblank and well-formed Unicode. Revisions append a full replacement with the same kind and current supersedes_id. Missing verification resets to unverified. owner_ref is only a label, never an identity."
+      },
+      "Entry": {
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "content",
+          "verification",
+          "status",
+          "owner_ref",
+          "source",
+          "occurred_at",
+          "supersedes_id",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EntryKind"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification",
+            "default": "unverified"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EntryStatus"
+          },
+          "owner_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "occurred_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UUID"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "progress",
+                    "decision"
+                  ]
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": "recorded",
+                  "default": "recorded"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "blocker"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "open",
+                    "resolved"
+                  ],
+                  "default": "open"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "action"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "todo",
+                    "doing",
+                    "done",
+                    "cancelled"
+                  ],
+                  "default": "todo"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "HistoryEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Entry"
+          },
+          {
+            "type": "object",
+            "required": [
+              "is_current"
+            ],
+            "properties": {
+              "is_current": {
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      },
+      "Attention": {
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "content",
+          "content_truncated",
+          "verification",
+          "status",
+          "owner_ref",
+          "occurred_at",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EntryKind"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "content_truncated": {
+            "type": "boolean"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EntryStatus"
+          },
+          "owner_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "occurred_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
+      "ProjectSummary": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Project"
+          },
+          {
+            "type": "object",
+            "required": [
+              "open_actions",
+              "open_blockers",
+              "unverified_entries",
+              "attention"
+            ],
+            "properties": {
+              "open_actions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "open_blockers": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unverified_entries": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "attention": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "$ref": "#/components/schemas/Attention"
+                },
+                "description": "Current records only, ordered by open blockers, unfinished actions, then unverified records; within priority newest first. Counts include all verification states. This bounded preview is not a complete inbox."
+              }
+            }
+          }
+        ]
+      },
+      "ProjectPage": {
+        "type": "object",
+        "required": [
+          "projects",
+          "limit",
+          "offset",
+          "has_more",
+          "next_offset"
+        ],
+        "properties": {
+          "projects": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/ProjectSummary"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_offset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      },
+      "EntryPage": {
+        "type": "object",
+        "required": [
+          "entries",
+          "limit",
+          "offset",
+          "has_more",
+          "next_offset"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntry"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_offset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      },
+      "BriefSection": {
+        "type": "object",
+        "required": [
+          "entries",
+          "total",
+          "truncated"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Brief": {
+        "type": "object",
+        "required": [
+          "project",
+          "generated_at",
+          "mode",
+          "verification_basis",
+          "sections"
+        ],
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/Project"
+          },
+          "generated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "mode": {
+            "type": "string",
+            "const": "recorded_context"
+          },
+          "verification_basis": {
+            "type": "string",
+            "const": "caller_asserted"
+          },
+          "sections": {
+            "type": "object",
+            "required": [
+              "confirmed_facts",
+              "decisions",
+              "blockers",
+              "next_actions",
+              "unverified",
+              "disputed",
+              "closed"
+            ],
+            "properties": {
+              "confirmed_facts": {
+                "$ref": "#/components/schemas/BriefSection"
+              },
+              "decisions": {
+                "$ref": "#/components/schemas/BriefSection"
+              },
+              "blockers": {
+                "$ref": "#/components/schemas/BriefSection"
+              },
+              "next_actions": {
+                "$ref": "#/components/schemas/BriefSection"
+              },
+              "unverified": {
+                "$ref": "#/components/schemas/BriefSection"
+              },
+              "disputed": {
+                "$ref": "#/components/schemas/BriefSection"
+              },
+              "closed": {
+                "$ref": "#/components/schemas/BriefSection"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error",
+          "code",
+          "request_id"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "validation_error",
+              "cross_origin_denied",
+              "not_found",
+              "revision_conflict",
+              "payload_too_large",
+              "internal_error",
+              "service_unavailable"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Invalid input or query parameter.",
+        "headers": {
+          "X-Request-ID": {
+            "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+            }
+          },
+          "X-API-Version": {
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Cross-origin browser write denied.",
+        "headers": {
+          "X-Request-ID": {
+            "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+            }
+          },
+          "X-API-Version": {
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "Project, predecessor or route not found.",
+        "headers": {
+          "X-Request-ID": {
+            "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+            }
+          },
+          "X-API-Version": {
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "Entry already superseded; read current history before another revision.",
+        "headers": {
+          "X-Request-ID": {
+            "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+            }
+          },
+          "X-API-Version": {
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "JSON body exceeds 16384 bytes.",
+        "headers": {
+          "X-Request-ID": {
+            "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+            }
+          },
+          "X-API-Version": {
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error500": {
+        "description": "Internal server error.",
+        "headers": {
+          "X-Request-ID": {
+            "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+            }
+          },
+          "X-API-Version": {
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "Database operation failed; do not blindly retry writes.",
+        "headers": {
+          "X-Request-ID": {
+            "description": "Correlation ID; clients may supply an ASCII letter/digit followed by at most 63 letters, digits, dots, underscores, colons or hyphens. Invalid IDs are replaced.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+            }
+          },
+          "X-API-Version": {
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

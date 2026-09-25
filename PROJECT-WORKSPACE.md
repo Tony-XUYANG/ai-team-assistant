@@ -1,5 +1,10 @@
 # Project Context API (3.4.0)
 
+Update in 3.9.0: the endpoints below also exist under `/api/v1`, with stable
+error codes and a checked-in OpenAPI contract. The web UI uses the new prefix;
+legacy clients remain compatible. See [MULTIPLATFORM.md](MULTIPLATFORM.md).
+The historical validation results below refer to the initial 3.4.0 delivery.
+
 Create a project, record context with sources, correct or complete work without
 losing history, and retrieve a handoff brief. This is Node.js and PostgreSQL,
 without an AI provider. The accepted Kubernetes lab still runs 3.3.0; this feature

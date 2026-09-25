@@ -38,7 +38,7 @@ function errorText(error) {
     + (error.requestId ? ` 请求编号：${error.requestId}` : "");
 }
 async function api(route, body) {
-  const response = await fetch(route, { method: body === undefined ? "GET" : "POST", cache: "no-store",
+  const response = await fetch("/api/v1" + route, { method: body === undefined ? "GET" : "POST", cache: "no-store",
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(10000) });
   if (!response.ok) throw Object.assign(new Error("Request failed"), { status: response.status, requestId: response.headers.get("x-request-id") });

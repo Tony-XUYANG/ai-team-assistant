@@ -7,6 +7,7 @@ RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY server.js app.js database.js logger.js migrate.js projects.js project-store.js ./
 COPY scripts/migration-support.js scripts/project-migration.js ./scripts/
 COPY public ./public
+COPY api ./api
 
 ENV NODE_ENV=production
 ENV PORT=8000
