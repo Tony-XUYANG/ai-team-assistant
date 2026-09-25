@@ -8,7 +8,7 @@ const { createInterface } = require("node:readline");
 const { pipeline } = require("node:stream/promises");
 const { setTimeout: delay } = require("node:timers/promises");
 const { parseArgs, promisify } = require("node:util");
-const { summarySql, migrationSummarySql, validateBackupTables, backupDirectory, checksum, verifyArchive, validateManifest, assertSameData, assertOwnedContainer, assertDatabaseIsolation } = require("./backup-support");
+const { summarySql, migrationSummarySql, projectSummarySql, validateBackupTables, backupDirectory, checksum, verifyArchive, validateManifest, assertSameData, assertOwnedContainer, assertDatabaseIsolation } = require("./backup-support");
 
 const execute = promisify(execFile);
 const projectDir = path.resolve(__dirname, "..");
@@ -151,7 +151,8 @@ async function openSnapshot() {
     SET LOCAL idle_in_transaction_session_timeout='90s';
     SELECT jsonb_build_object('snapshot',pg_export_snapshot(),'capturedAt',clock_timestamp(),
       'database',current_database(),'serverVersion',current_setting('server_version'),
-      'tableBytes',pg_total_relation_size('public.links'),
+      'tableBytes',(SELECT sum(pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(tablename)))
+        FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')),
       'tables',(SELECT json_agg(schemaname||'.'||tablename ORDER BY schemaname,tablename)
         FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')));
   `);
@@ -183,6 +184,14 @@ async function openSnapshot() {
     if (hasMigrations) {
       process.child.stdin.write(migrationSummarySql + "\n");
       summary.migrations = await waitMessages(3);
+    }
+    if (metadata.tables.includes("public.projects")) {
+      summary.projects = {};
+      let count = 3;
+      for (const table of ["projects", "project_entries"]) {
+        process.child.stdin.write(projectSummarySql(table) + "\n");
+        summary.projects[table] = await waitMessages(++count);
+      }
     }
     return { metadata, summary, close };
   } catch (error) {
@@ -299,6 +308,12 @@ async function verifyRestoration() {
   if (manifest.source.summary.migrations) {
     restored.migrations = JSON.parse(await streamCommand("docker.exe", sqlArgs, { inputText: migrationSummarySql + "\n" }));
   }
+  if (manifest.source.summary.projects) {
+    restored.projects = {};
+    for (const table of ["projects", "project_entries"]) {
+      restored.projects[table] = JSON.parse(await streamCommand("docker.exe", sqlArgs, { inputText: projectSummarySql(table) + "\n" }));
+    }
+  }
   report.phase = "compare-data";
   assertSameData(manifest.source.summary, restored);
   report.dataVerification = { rowCount: restored.rowCount, dataSha256: restored.dataSha256,
@@ -306,7 +321,8 @@ async function verifyRestoration() {
     titleDataSha256: restored.titleDataSha256,
     titlesVerified: typeof manifest.source.summary.titleDataSha256 === "string",
     migrationLedgerVerified: Boolean(manifest.source.summary.migrations),
-    migrationLedger: restored.migrations };
+    migrationLedger: restored.migrations, projectsVerified: Boolean(manifest.source.summary.projects),
+    projects: restored.projects };
   report.timeToVerifiedDataMs = Date.now() - restoreStarted;
   checkInterrupt();
   containerAttempts.push(apiName);

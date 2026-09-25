@@ -4,6 +4,8 @@ const { performance } = require("node:perf_hooks");
 const { version } = require("./package.json");
 const { log: defaultLog, requestId, safeErrorCode } = require("./logger");
 
+const { projectRoute, handleProjectRequest } = require("./projects");
+
 const maxBodyBytes = 16 * 1024;
 const methods = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 const knownRoutes = new Set(["/version", "/live", "/health", "/links"]);
@@ -47,6 +49,10 @@ function createServer({ database, log = defaultLog }) {
   }
 
   async function handle(request, response, pathname) {
+    if (projectRoute(pathname)) {
+      response.setHeader("Cache-Control", "no-store");
+      return handleProjectRequest({ request, response, pathname, query, readJson, sendJson });
+    }
     if (request.method === "GET" && pathname === "/version") {
       response.setHeader("Cache-Control", "no-store");
       return sendJson(response, 200, { version, hostname: hostname() });
@@ -110,7 +116,7 @@ function createServer({ database, log = defaultLog }) {
       pathname = new URL(request.url, "http://localhost").pathname;
       context.route = knownRoutes.has(pathname) ? pathname
         : /^\/links\/[a-f0-9]{8}$/.test(pathname) ? "/links/:code"
-        : /^\/[a-f0-9]{8}$/.test(pathname) ? "/:code" : "unmatched";
+        : /^\/[a-f0-9]{8}$/.test(pathname) ? "/:code" : projectRoute(pathname) || "unmatched";
     } catch { malformed = true; }
 
     let logged = false;
@@ -141,7 +147,7 @@ function createServer({ database, log = defaultLog }) {
       }
       if (!response.headersSent) {
         const messages = {
-          400: "Body must be valid JSON", 413: "Request body is too large",
+          400: error.validationMessage || "Body must be valid JSON", 413: "Request body is too large",
           503: "Service temporarily unavailable", 500: "Internal server error",
         };
         sendJson(response, status, { error: messages[status] });

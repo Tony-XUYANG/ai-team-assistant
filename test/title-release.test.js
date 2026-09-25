@@ -2,8 +2,10 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { migrationJob, executeMigrationJob, requireVerifiedBackup } = require("../scripts/title-release-support");
+const { migrationJob, executeMigrationJob, requireVerifiedBackup, verifyMigrationResults } = require("../scripts/title-release-support");
 const { titleMigration, migrationChecksum } = require("../scripts/migration-support");
+const { projectMigration } = require("../scripts/project-migration");
+const migrations = [titleMigration, projectMigration].map(m => ({ id: m.id, checksum: migrationChecksum(m), status: "applied" }));
 const id = "2026-09-24T10-10-00-000Z-1234abcd";
 const imageRef = "localhost:5001/shortener@sha256:" + "a".repeat(64);
 const container = { envFrom: [{ configMapRef: { name: "api-config" } }], env: [
@@ -43,7 +45,7 @@ function fakeKube({ failed = false, foreign = false } = {}) {
     calls.push(args);
     if (args[0] === "create") { exists = true; return JSON.stringify(job); }
     if (args[0] === "logs") return JSON.stringify(failed ? { event: "migration_failed" } : {
-      event: "migration_completed", status: "applied", checksum: migrationChecksum(titleMigration) });
+      event: "migration_completed", status: "applied", checksum: migrationChecksum(titleMigration), migrations });
     if (args[0] === "delete") { exists = false; return "deleted"; }
     if (args[1] === "services" || args[1] === "pods") return JSON.stringify({ items: [] });
     if (args[1] === "job") {
@@ -83,4 +85,13 @@ test("cleanup refuses a Job whose ownership changed", async t => {
 
 test("backup release gate refuses path traversal before reading an archive", async () => {
   await assert.rejects(requireVerifiedBackup(path.resolve(__dirname, ".."), "../invalid", imageRef));
+});
+
+test("release rejects missing, incomplete or modified project migration evidence", () => {
+  const result = { status: "applied", checksum: migrationChecksum(titleMigration), migrations };
+  verifyMigrationResults(result);
+  for (const change of [undefined, migrations.slice(0, 1), [migrations[0], { ...migrations[1], checksum: "0".repeat(64) }],
+    [migrations[0], { ...migrations[1], status: "failed" }], [migrations[0], migrations[0]]]) {
+    assert.throws(() => verifyMigrationResults({ ...result, migrations: change }));
+  }
 });

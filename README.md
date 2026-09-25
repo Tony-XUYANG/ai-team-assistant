@@ -4,9 +4,12 @@ The planned product is an AI coordination assistant for individuals and teams,
 including non-technical workers managing multiple projects. See
 [PRODUCT-DIRECTION.md](PRODUCT-DIRECTION.md) for the proposed scope.
 
-The implemented code is currently a JavaScript URL-shortener service and a
-Linux, Docker, and Kubernetes operations lab. AI features, project workspaces,
-user accounts, and team collaboration are not implemented yet. The historical
+The implemented code is a JavaScript project-context API, URL-shortener service,
+and Linux, Docker, and Kubernetes operations lab. Version 3.4.0 adds project
+objectives, constraints, sourced records, revision history, and a deterministic
+handoff brief. See [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md) for the API.
+AI integration, a collaboration UI, user accounts, and team authorization are
+not implemented yet. The historical
 package and infrastructure names remain `shortener` to preserve the working lab.
 
 Local credentials, caches, database backups, incident reports, and generated
@@ -18,6 +21,27 @@ Public repository: https://github.com/Tony-XUYANG/ai-team-assistant
 
 The app has no user authentication or tenant isolation yet. Keep the lab local;
 publishing the source code does not make the running service ready for public use.
+
+## Project context API: September 25, 2026
+
+The current source and Compose image version is 3.4.0. The existing Kubernetes
+lab remains on the accepted 3.3.0 image until an explicit release; its existing
+data and PVC have not been migrated by this implementation step. Docker was
+started and all three existing Pods were verified healthy on September 25.
+
+New `/projects` endpoints preserve provenance, caller-declared verification,
+and immutable entry revisions. The brief excludes superseded records and keeps
+unverified/disputed information separate from confirmed facts. It does not call
+an AI model or independently verify a claim. Pagination and brief truncation
+metadata make incomplete results visible. Project scoping is enforced by queries
+and a composite foreign key; it is not an account permission boundary.
+
+The migration runner now applies the unchanged title migration and additive
+`002_project_workspace` migration. CI tests source, HTTP behavior in the actual
+image, PostgreSQL constraints, migration rollback, and project data restoration.
+Backup verification recognizes both project tables, including their full data,
+schema, constraints and indexes. Operational documents below describe the
+accepted 3.3.0 lab and earlier exercises unless explicitly updated.
 
 ## Environment status: September 24, 2026
 
@@ -36,7 +60,7 @@ has **not** been applied: both API replicas still use the administrator account.
 
 Start with [OPERATIONS.md](OPERATIONS.md) for application-owner responsibilities,
 the tested release pipeline, its failure drill, and the incident workflow. The
-current service is version 3.3.0 and exposes `/version` as well as `/health`.
+accepted Kubernetes service is version 3.3.0 and exposes `/version` as well as `/health`.
 Responses carry `X-Request-ID`; structured request/error logs correlate an HTTP
 failure with its application instance and database operation. The database outage
 exercise and its verified recovery are documented in OPERATIONS.md.

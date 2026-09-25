@@ -1,13 +1,15 @@
 {
   "name": "learning-url-shortener",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "private": true,
-  "description": "A URL shortener for learning Linux, Docker, and Kubernetes",
+  "description": "Project context and handoff APIs with a Linux, Docker, and Kubernetes lab",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "migrate": "node migrate.js",
     "test:title": "node --test test/title.test.js",
+    "test:projects": "node --test test/projects.test.js",
+    "test:projects:acceptance": "node --test test/projects-acceptance.test.js",
     "test": "node --test test/smoke.test.js",
     "test:version": "node --test test/version.test.js",
     "test:unit": "node --test test/logging.test.js",

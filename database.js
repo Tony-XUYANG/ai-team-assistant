@@ -1,6 +1,8 @@
 const { randomBytes } = require("node:crypto");
 const { Pool } = require("pg");
 const { log, safeErrorCode } = require("./logger");
+const { createProjectStore } = require("./project-store");
+const { verifyProjectSchema } = require("./scripts/project-migration");
 const { titleShapeSql, assertTitleShape } = require("./scripts/migration-support");
 
 // Pool reads PGHOST, PGPORT, PGUSER, PGPASSWORD, and PGDATABASE.
@@ -17,6 +19,7 @@ pool.on("error", (error) => {
 async function initialize() {
   // Migrations run before rollout, not once per replica during startup.
   assertTitleShape((await pool.query(titleShapeSql)).rows);
+  await verifyProjectSchema(pool);
   await checkHealth();
 }
 
@@ -39,6 +42,8 @@ async function findLink(code) {
 
 async function checkHealth() {
   await pool.query("SELECT code, url, title, created_at FROM public.links LIMIT 0");
+  await pool.query("SELECT id FROM public.projects LIMIT 0");
+  await pool.query("SELECT id FROM public.project_entries LIMIT 0");
 }
 
 async function getLink(code) {
@@ -46,6 +51,7 @@ async function getLink(code) {
 }
 
 module.exports = {
+  ...createProjectStore(pool),
   initialize,
   createLink,
   findLink,

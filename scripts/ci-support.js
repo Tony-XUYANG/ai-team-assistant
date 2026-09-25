@@ -3,8 +3,8 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 
-const unitFiles = ["test/logging.test.js", "test/drill-database.test.js", "test/backup.test.js", "test/ci.test.js", "test/resource.test.js", "test/migration.test.js", "test/title.test.js", "test/title-release.test.js", "test/db-access.test.js"];
-const acceptanceFiles = ["test/smoke.test.js", "test/version.test.js", "test/request-id.test.js", "test/title-acceptance.test.js"];
+const unitFiles = ["test/logging.test.js", "test/drill-database.test.js", "test/backup.test.js", "test/ci.test.js", "test/resource.test.js", "test/migration.test.js", "test/title.test.js", "test/title-release.test.js", "test/db-access.test.js", "test/projects.test.js"];
+const acceptanceFiles = ["test/smoke.test.js", "test/version.test.js", "test/request-id.test.js", "test/title-acceptance.test.js", "test/projects-acceptance.test.js"];
 
 function redactDiagnostics(text) {
   return String(text).replace(/\b(POSTGRES_PASSWORD|PGPASSWORD)=([^"'\s\\]+)/g, "$1=[REDACTED]");
@@ -35,7 +35,7 @@ function verifyRegistryManifest(bytes, digest, expected) {
 }
 
 async function sourceFingerprint(project) {
-  const files = ["Dockerfile", ".dockerignore", "package.json", "package-lock.json", "server.js", "app.js", "database.js", "logger.js", "migrate.js"];
+  const files = ["Dockerfile", ".dockerignore", "package.json", "package-lock.json", "server.js", "app.js", "database.js", "logger.js", "migrate.js", "projects.js", "project-store.js"];
   async function walk(folder) {
     const entries = await fs.readdir(path.join(project, folder), { withFileTypes: true });
     for (const entry of entries) {

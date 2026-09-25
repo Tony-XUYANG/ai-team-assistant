@@ -4,6 +4,18 @@ const path = require("node:path");
 const { setTimeout: delay } = require("node:timers/promises");
 const { backupDirectory, validateManifest, verifyArchive } = require("./backup-support");
 const { titleMigration, migrationChecksum, assertTitleShape } = require("./migration-support");
+const { projectMigration, verifyProjectSchema } = require("./project-migration");
+
+function verifyMigrationResults(result) {
+  assert.equal(result?.checksum, migrationChecksum(titleMigration));
+  assert.ok(["applied", "already_applied"].includes(result.status));
+  assert.equal(result.migrations?.length, 2, "Both migration results are required before deployment");
+  for (const migration of [titleMigration, projectMigration]) {
+    const item = result.migrations.find(item => item.id === migration.id);
+    assert.equal(item?.checksum, migrationChecksum(migration));
+    assert.ok(["applied", "already_applied"].includes(item.status));
+  }
+}
 
 async function requireVerifiedBackup(project, backupId, currentImage) {
   const directory = backupDirectory(path.join(project, ".backups"), backupId);
@@ -76,9 +88,8 @@ async function executeMigrationJob({ kubectl, runDir, id, imageRef, container })
     assert.ok(job.status.conditions?.some(c => c.type === "Complete" && c.status === "True"), "Migration Job failed; do not deploy");
     result = logs.split(/\r?\n/).map(line => { try { return JSON.parse(line); } catch { return {}; } })
       .find(item => item.event === "migration_completed");
-    assert.equal(result?.checksum, migrationChecksum(titleMigration));
-    assert.ok(["applied", "already_applied"].includes(result.status));
-    return { job: name, uid, ...result, schemaRollback: "never automatically drop the expanded column" };
+    verifyMigrationResults(result);
+    return { job: name, uid, ...result, schemaRollback: "never automatically drop expanded columns or project tables" };
   } finally {
     if (attempted) {
       const text = await kubectl("get", "job", name, "--ignore-not-found", "-o", "json");
@@ -122,4 +133,10 @@ async function verifyTitleSchema(kubectl) {
   return { shape, checksum: history[0].checksum };
 }
 
-module.exports = { requireVerifiedBackup, migrationJob, executeMigrationJob, queryThroughApi, preserveLegacyRows, verifyTitleSchema };
+async function verifyWorkspaceSchema(kubectl) {
+  await verifyProjectSchema({ query: async (sql, parameters = []) => ({ rows: await queryThroughApi(kubectl, sql, parameters) }) });
+  return { id: projectMigration.id, checksum: migrationChecksum(projectMigration), verified: true };
+}
+
+module.exports = { requireVerifiedBackup, migrationJob, executeMigrationJob, queryThroughApi, preserveLegacyRows, verifyTitleSchema,
+  verifyMigrationResults, verifyWorkspaceSchema };

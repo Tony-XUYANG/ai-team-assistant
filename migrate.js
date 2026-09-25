@@ -1,4 +1,5 @@
 const { Client } = require("pg");
+const { applyProjectMigration } = require("./scripts/project-migration");
 const { applyTitleMigration } = require("./scripts/migration-support");
 
 async function migrate() {
@@ -17,7 +18,9 @@ async function migrate() {
       code VARCHAR(8) PRIMARY KEY, url TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
     await client.query("COMMIT");
-    const result = await applyTitleMigration(client);
+    const title = await applyTitleMigration(client);
+    const projects = await applyProjectMigration(client);
+    const result = { ...title, migrations: [title, projects] };
     console.log(JSON.stringify({ event: "migration_completed", ...result }));
     return result;
   } catch (error) {
@@ -27,7 +30,7 @@ async function migrate() {
 }
 
 if (require.main === module) {
-  const timer = setTimeout(() => { console.error('{"event":"migration_deadline"}'); process.exit(2); }, 15000);
+  const timer = setTimeout(() => { console.error('{"event":"migration_deadline"}'); process.exit(2); }, 25000);
   migrate().catch(error => {
     const code = /^[A-Z0-9_]{5,32}$/.test(error.code || "") ? error.code : "MIGRATION_FAILED";
     console.error(JSON.stringify({ event: "migration_failed", code }));

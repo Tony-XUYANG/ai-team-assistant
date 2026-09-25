@@ -23,9 +23,8 @@ function assertTitleShape(rows) {
 
 // Only trusted, repository-owned SQL is accepted; this is not a user-SQL API.
 // The caller supplies a dedicated connected Client with no active transaction.
-async function applyTitleMigration(client, migration = titleMigration) {
+async function applyMigration(client, migration, validate) {
   const checksum = migrationChecksum(migration);
-  assert.equal(migration.id, titleMigration.id, "This lab runner handles only the title expansion");
   let began = false;
   try {
     await client.query("BEGIN");
@@ -34,7 +33,6 @@ async function applyTitleMigration(client, migration = titleMigration) {
     await client.query("SET LOCAL statement_timeout = '2500ms'");
     await client.query("SET LOCAL idle_in_transaction_session_timeout = '5000ms'");
     await client.query("SET LOCAL transaction_timeout = '6000ms'");
-    // Match the advisory lock already used by database.initialize().
     const lock = await client.query("SELECT pg_try_advisory_xact_lock(20260924, 1) AS acquired");
     if (!lock.rows[0]?.acquired) throw Object.assign(new Error("Another schema operation is active"), { code: "MIGRATION_BUSY" });
     await client.query(`CREATE TABLE IF NOT EXISTS public.lab_schema_migrations (
@@ -50,7 +48,7 @@ async function applyTitleMigration(client, migration = titleMigration) {
       await client.query("INSERT INTO public.lab_schema_migrations (id, checksum) VALUES ($1, $2)", [migration.id, checksum]);
       status = "applied";
     }
-    assertTitleShape((await client.query(titleShapeSql)).rows);
+    await validate(client);
     await client.query("COMMIT");
     began = false;
     return { id: migration.id, checksum, status };
@@ -63,10 +61,15 @@ async function applyTitleMigration(client, migration = titleMigration) {
   }
 }
 
+async function applyTitleMigration(client, migration = titleMigration) {
+  assert.equal(migration.id, titleMigration.id, "This lab runner handles only the title expansion");
+  return applyMigration(client, migration, async db => assertTitleShape((await db.query(titleShapeSql)).rows));
+}
+
 function assertMigrationContainer(container, id, name) {
   assert.equal(container.Name, "/" + name, "Unexpected container name");
   assert.equal(container.Config.Labels?.["shortener.lab/migration-run"], id, "Container ownership mismatch");
   assert.ok(!(container.Mounts || []).some(m => ["bind", "volume"].includes(m.Type)), "Persistent mount; cleanup refused");
 }
 
-module.exports = { titleMigration, titleShapeSql, migrationChecksum, assertTitleShape, applyTitleMigration, assertMigrationContainer };
+module.exports = { titleMigration, titleShapeSql, migrationChecksum, assertTitleShape, applyTitleMigration, applyMigration, assertMigrationContainer };

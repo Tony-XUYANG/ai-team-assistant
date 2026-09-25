@@ -8,6 +8,8 @@ const { setTimeout: delay } = require("node:timers/promises");
 const { version } = require("../package.json");
 const { assertOwnedContainer, assertDatabaseIsolation } = require("./backup-support");
 const { unitFiles, acceptanceFiles, testSummary, validateImage, sourceFingerprint, redactDiagnostics } = require("./ci-support");
+const { verifyMigrationResults } = require("./title-release-support");
+const { projectSummarySql } = require("./backup-support");
 
 const execute = promisify(execFile);
 const project = path.resolve(__dirname, "..");
@@ -41,13 +43,14 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
   const docker = (...args) => run(dockerPath, args);
   async function installTests() {
     const files = [];
-    for (const name of acceptanceFiles) files.push({ name, data: (await fs.readFile(path.join(project, name))).toString("base64") });
+    const installed = [...acceptanceFiles, "test/projects-database.test.cjs"];
+    for (const name of installed) files.push({ name, data: (await fs.readFile(path.join(project, name))).toString("base64") });
     const installer = `
       const fs=require('node:fs');
       const assert=require('node:assert/strict');
       const files=JSON.parse(fs.readFileSync(0,'utf8'));
       for(const file of files){
-        assert.ok(${JSON.stringify(acceptanceFiles)}.includes(file.name));
+        assert.ok(${JSON.stringify(installed)}.includes(file.name));
         fs.writeFileSync('/app/'+file.name,Buffer.from(file.data,'base64'),{flag:'wx'});
       }
     `;
@@ -127,8 +130,11 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
         if(!rejected)throw Error('Missing schema must fail startup');console.log('Unmigrated startup rejected')})()
         .catch(()=>process.exit(1));`);
     report.migration = JSON.parse(await docker("exec", migrateName, "node", "migrate.js"));
+    verifyMigrationResults(report.migration);
     assert.equal(report.migration.status, "applied");
     report.repeatMigration = JSON.parse(await docker("exec", migrateName, "node", "migrate.js"));
+    verifyMigrationResults(report.repeatMigration);
+    assert.ok(report.repeatMigration.migrations.every(item => item.status === "already_applied"));
     assert.equal(report.repeatMigration.status, "already_applied");
     const migrationContainer = JSON.parse(await docker("inspect", migrateName))[0];
     assertOwnedContainer(migrationContainer, id, migrateName);
@@ -153,6 +159,31 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
     report.candidate = { files: acceptanceFiles, ...testSummary(acceptance),
       database: "isolated tmpfs PostgreSQL", sourceCredentialsUsed: false };
     await fs.writeFile(path.join(runDir, "candidate.tap"), acceptance + "\n");
+    const databaseTests = await docker("exec", "--env", "SHORTENER_CI_FIXTURE=isolated-tmpfs", apiName,
+      "node", "--test", "--test-reporter=tap", "test/projects-database.test.cjs");
+    report.database = testSummary(databaseTests);
+    await fs.writeFile(path.join(runDir, "database.tap"), databaseTests + "\n");
+    await docker("exec", dbName, "pg_dump", "-U", "ci_lab", "-d", "ci_lab", "--format=custom", "--no-owner", "--no-acl",
+      "--file=/var/lib/postgresql/data/ci-restore.dump");
+    await docker("exec", dbName, "createdb", "-U", "ci_lab", "ci_restored");
+    await docker("exec", dbName, "pg_restore", "-U", "ci_lab", "-d", "ci_restored", "--exit-on-error", "--single-transaction",
+      "--no-owner", "--no-acl", "/var/lib/postgresql/data/ci-restore.dump");
+    const restoreCheck = `const assert=require('node:assert/strict');const {Client}=require('pg');let phase='connect';
+      (async()=>{const source=new Client({statement_timeout:3000}),restored=new Client({database:'ci_restored',statement_timeout:3000});
+        try {await source.connect();await restored.connect();
+          for(const [table,sql] of ${JSON.stringify(["projects", "project_entries"].map(table => [table, projectSummarySql(table)]))}) {
+            phase=table+':query';
+            const a=(await source.query(sql)).rows[0].jsonb_build_object;
+            const b=(await restored.query(sql)).rows[0].jsonb_build_object;
+            for(const key of Object.keys(a)){phase=table+':'+key;assert.deepEqual(a[key],b[key]);}
+          }
+          phase='schema';
+          await require('./scripts/project-migration').verifyProjectSchema(restored);
+          console.log(JSON.stringify({projectTablesRestored:true,contentsAndSchemaMatch:true}));
+        } finally {await source.end();await restored.end()}
+      })().catch(error=>{console.error(JSON.stringify({event:'project_restore_failed',phase,code:error.code||error.name,
+        ...(phase.endsWith(':constraints')?{source:error.actual,restored:error.expected}:{})}));process.exit(1)});`;
+    report.projectRestore = JSON.parse(await docker("exec", apiName, "node", "-e", restoreCheck));
     if (oldImage) {
       attempted.push(oldName);
       await run(dockerPath, ["run", "-d", "--pull=never", "--name", oldName, "--label", "shortener.lab/restore-run=" + id,
@@ -188,7 +219,7 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
     await fs.writeFile(path.join(runDir, "ci-report.json"), JSON.stringify(report, null, 2));
   }
   assert.equal(report.status, "succeeded", `CI rejected candidate in ${report.phase}; see ${path.join(runDir, "ci-report.json")}\n${report.error || report.cleanup?.error}`);
-  console.log(`CI PASS: ${report.unit.count} source checks and ${report.candidate.count} candidate-image checks`);
+  console.log(`CI PASS: ${report.unit.count} source, ${report.candidate.count} API, ${report.database.count} PostgreSQL checks; project restore verified`);
   return report;
 }
 

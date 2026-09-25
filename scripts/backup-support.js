@@ -48,10 +48,36 @@ SELECT jsonb_build_object(
   ) i)
 );`;
 
+function projectSummarySql(table) {
+  assert.ok(["projects", "project_entries"].includes(table));
+  const timestamps = table === "projects" ? ["created_at", "updated_at"] : ["created_at", "occurred_at"];
+  const normalized = timestamps.map(column => `'${column}',to_char(t.${column} AT TIME ZONE 'UTC',
+    'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`).join(",");
+  return `SELECT jsonb_build_object(
+    'rowCount',(SELECT count(*) FROM public.${table}),
+    'dataSha256',(SELECT encode(sha256(convert_to(COALESCE(string_agg(
+      (to_jsonb(t) || jsonb_build_object(${normalized}))::text,E'\\n' ORDER BY id),''),'UTF8')),'hex')
+      FROM public.${table} t),
+    'columns',(SELECT json_agg(c ORDER BY ordinal_position) FROM (
+      SELECT column_name,data_type,character_maximum_length,is_nullable,column_default,ordinal_position
+      FROM information_schema.columns WHERE table_schema='public' AND table_name='${table}') c),
+    'constraints',(SELECT json_agg(c ORDER BY name) FROM (
+      SELECT conname AS name,contype AS type,pg_get_constraintdef(oid) AS definition
+      FROM pg_constraint WHERE conrelid='public.${table}'::regclass) c),
+    'indexes',(SELECT json_agg(i ORDER BY indexname) FROM (
+      SELECT indexname,indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${table}') i)
+  );`;
+}
+
 function validateBackupTables(tables) {
   assert.ok(Array.isArray(tables));
   const hasMigrations = tables.includes("public.lab_schema_migrations");
-  assert.deepEqual(tables, hasMigrations ? ["public.lab_schema_migrations", "public.links"] : ["public.links"],
+  const expected = hasMigrations ? ["public.lab_schema_migrations", "public.links"] : ["public.links"];
+  if (tables.includes("public.projects")) {
+    assert.ok(hasMigrations, "Project tables require a migration ledger");
+    expected.push("public.project_entries", "public.projects");
+  }
+  assert.deepEqual(tables, expected,
     "Unexpected tables; extend backup verification before continuing");
   return hasMigrations;
 }
@@ -109,6 +135,16 @@ function validateManifest(manifest) {
     assert.ok(["http:", "https:"].includes(new URL(link.target).protocol));
   }
   assert.ok(manifest.beforeBackup, "Backup verification marker is missing");
+  if (manifest.source.tables?.includes("public.projects")) {
+    validateBackupTables(manifest.source.tables);
+    assert.deepEqual(Object.keys(manifest.source.summary.projects || {}).sort(), ["project_entries", "projects"],
+      "Project backup evidence is missing");
+    for (const table of Object.values(manifest.source.summary.projects)) {
+      assert.ok(Number.isSafeInteger(table.rowCount) && table.rowCount >= 0);
+      assert.match(table.dataSha256, /^[a-f0-9]{64}$/);
+      for (const key of ["columns", "constraints", "indexes"]) assert.ok(Array.isArray(table[key]) && table[key].length > 0);
+    }
+  }
 }
 
 function assertSameData(expected, actual) {
@@ -119,6 +155,9 @@ function assertSameData(expected, actual) {
   }
   if (Object.hasOwn(expected, "migrations")) {
     assert.deepEqual(actual.migrations, expected.migrations, "Restored migration ledger data/schema differ");
+  }
+  if (Object.hasOwn(expected, "projects")) {
+    assert.deepEqual(actual.projects, expected.projects, "Restored project records/schema differ");
   }
   for (const key of ["columns", "constraints", "indexes"]) {
     assert.deepEqual(actual[key], expected[key], "Restored " + key + " differ");
@@ -144,4 +183,4 @@ function assertDatabaseIsolation(container) {
     "Restore database must not mount persistent data");
 }
 
-module.exports = { summarySql, migrationSummarySql, validateBackupTables, backupDirectory, checksum, verifyArchive, validateManifest, assertSameData, assertOwnedContainer, assertDatabaseIsolation };
+module.exports = { summarySql, migrationSummarySql, projectSummarySql, validateBackupTables, backupDirectory, checksum, verifyArchive, validateManifest, assertSameData, assertOwnedContainer, assertDatabaseIsolation };

@@ -9,7 +9,7 @@ const { version } = require("../package.json");
 const { runCI } = require("./ci");
 const { setupRegistry } = require("./setup-registry");
 const { testSummary, verifyRegistryManifest, sourceFingerprint, unitFiles, acceptanceFiles } = require("./ci-support");
-const { requireVerifiedBackup, executeMigrationJob, queryThroughApi, preserveLegacyRows, verifyTitleSchema } = require("./title-release-support");
+const { requireVerifiedBackup, executeMigrationJob, queryThroughApi, preserveLegacyRows, verifyTitleSchema, verifyWorkspaceSchema } = require("./title-release-support");
 
 const { values } = parseArgs({ options: {
   image: { type: "string" },
@@ -377,6 +377,7 @@ async function main() {
     report.migration = await executeMigrationJob({ kubectl, runDir, id, imageRef: report.imageRef,
       container: baseline.spec.template.spec.containers.find(c => c.name === "api") });
     report.schema = await verifyTitleSchema(kubectl);
+    report.projectSchema = await verifyWorkspaceSchema(kubectl);
     await preserveLegacyRows(kubectl, report.legacyRows);
     await fs.writeFile(path.join(runDir, "report.json"), JSON.stringify(report, null, 2));
     await publish();

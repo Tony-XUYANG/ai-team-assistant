@@ -1,4 +1,5 @@
 const test = require("node:test");
+const { projectSummarySql } = require("../scripts/backup-support");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -98,6 +99,25 @@ test("backup accepts only explicitly verified tables and detects changed migrati
     migrations: { rowCount: 1, dataSha256: "b".repeat(64), columns: [{}], indexes: [{}] } };
   assertSameData(expected, structuredClone(expected));
   assert.throws(() => assertSameData(expected, { ...expected, migrations: { ...expected.migrations, rowCount: 0 } }), /migration ledger/);
+});
+
+test("project backups require both tables and verify their full contents and schema", () => {
+  const tables = ["public.lab_schema_migrations", "public.links", "public.project_entries", "public.projects"];
+  assert.equal(validateBackupTables(tables), true);
+  for (const table of ["public.projects", "public.project_entries", "public.lab_schema_migrations"]) {
+    assert.throws(() => validateBackupTables(tables.filter(item => item !== table)));
+  }
+  for (const table of ["projects", "project_entries"]) {
+    assert.match(projectSummarySql(table), /to_jsonb\(t\)/);
+    assert.match(projectSummarySql(table), /AT TIME ZONE 'UTC'/);
+  }
+  assert.throws(() => projectSummarySql("projects; DROP TABLE links"));
+  const data = { rowCount: 1, dataSha256: "a".repeat(64), columns: [], constraints: [], indexes: [],
+    projects: { projects: { rowCount: 1 }, project_entries: { rowCount: 3, dataSha256: "b".repeat(64) } } };
+  assertSameData(data, structuredClone(data));
+  const changed = structuredClone(data);
+  changed.projects.project_entries.dataSha256 = "c".repeat(64);
+  assert.throws(() => assertSameData(data, changed), /project records/);
 });
 
 test("manifest rejects mutable images, injected codes, and missing schema evidence", () => {

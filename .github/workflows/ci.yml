@@ -32,4 +32,4 @@ jobs:
         if: always()
         shell: bash
         run: |
-          node -e 'const fs=require("node:fs"); if(fs.existsSync(".ci")) for(const id of fs.readdirSync(".ci")){const p=`.ci/${id}/ci-report.json`;if(fs.existsSync(p)){const r=JSON.parse(fs.readFileSync(p,"utf8"));console.log(JSON.stringify({id:r.id,status:r.status,phase:r.phase,unit:r.unit?.count,candidate:r.candidate?.count,digest:r.platformDigest,cleanup:r.cleanup},null,2));}}'
+          node -e 'const fs=require("node:fs"); if(fs.existsSync(".ci")) for(const id of fs.readdirSync(".ci")){const p=`.ci/${id}/ci-report.json`;if(fs.existsSync(p)){const r=JSON.parse(fs.readFileSync(p,"utf8"));console.log(JSON.stringify({id:r.id,status:r.status,phase:r.phase,unit:r.unit?.count,candidate:r.candidate?.count,database:r.database?.count,projectRestore:r.projectRestore,digest:r.platformDigest,cleanup:r.cleanup},null,2));}}'
