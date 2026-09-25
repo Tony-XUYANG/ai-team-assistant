@@ -1,6 +1,6 @@
 # AI Team Assistant: Proposed Direction
 
-Status: product exploration with a first implemented project-context API in 3.4.0.
+Status: product exploration with a local workbench and project-context API in 3.5.0.
 The proposed AI/team workflow below remains a direction, not a completed product.
 
 ## Audience and purpose
@@ -41,22 +41,26 @@ The repository implements link creation, redirects, optional titles, PostgreSQL
 persistence, containerization, Kubernetes lab manifests, tests, and local
 release/backup/recovery exercises. Links can become a resource-entry feature.
 
-The 3.4.0 source adds project objectives and constraints, progress/decision/blocker/
+The 3.4.0 API adds project objectives and constraints, progress/decision/blocker/
 action records with required sources, explicit verification states, immutable
 revisions, and a deterministic handoff brief. Missing confirmation stays
 unverified. Corrections retain history and superseded entries leave the brief.
 Project references are scoped and enforced with a composite foreign key.
-See [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md). The local Kubernetes service
-still runs the previously accepted 3.3.0 release until a separate rollout.
+The 3.5.0 workbench adds a Chinese browser interface: project navigation,
+briefs, history, project details, record creation, task completion, blocker
+resolution, and JSON export. See [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md)
+and [WORKSPACE-UI.md](WORKSPACE-UI.md). The local Kubernetes service still runs
+the previously accepted 3.3.0 release until a separate rollout.
 
-There is no AI integration, collaboration UI, identity system, multi-project
-authorization, or paid service yet. Database least-privilege separation is also
-pending; the local baseline audit documents excessive application privileges.
+There is no AI integration, identity system, multi-project authorization, or paid
+service yet. The workbench is a local single-user preview, not a team product.
+Database least-privilege separation is also pending; the local baseline audit
+documents excessive application privileges.
 
 The existing runtime must not be exposed publicly as a finished team product.
 Market demand, pricing, and customer willingness to pay remain unvalidated.
 
 Next validation: let one person resume work across multiple real projects using
-recorded context, then test bounded handoffs with a small team. Add a workspace UI,
-authenticated ownership and authorization before connecting real team data or an
-AI provider. Do not interpret an owner_ref label or project UUID as an identity.
+the workbench, then test bounded handoffs with a small team. Add authenticated
+ownership and authorization before connecting real team data or an AI provider.
+Do not interpret an owner_ref label or project UUID as an identity.

@@ -24,3 +24,7 @@ __pycache__/
 *.py[cod]
 /tmp/
 /registry-data/
+test-results/
+playwright-report/
+.ui-artifacts/
+.workspace/

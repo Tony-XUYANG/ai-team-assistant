@@ -26,8 +26,14 @@ jobs:
             {"features":{"containerd-snapshotter":true}}
       - name: Prepare isolated test database image
         run: docker pull postgres:17-alpine
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
       - name: Test source and built image
         run: node scripts/ci.js
+      - name: Install Chromium for UI checks
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Test workbench in browser
+        run: npm run test:ui
       - name: Show acceptance summary
         if: always()
         shell: bash

@@ -4,12 +4,14 @@ The planned product is an AI coordination assistant for individuals and teams,
 including non-technical workers managing multiple projects. See
 [PRODUCT-DIRECTION.md](PRODUCT-DIRECTION.md) for the proposed scope.
 
-The implemented code is a JavaScript project-context API, URL-shortener service,
-and Linux, Docker, and Kubernetes operations lab. Version 3.4.0 adds project
-objectives, constraints, sourced records, revision history, and a deterministic
-handoff brief. See [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md) for the API.
-AI integration, a collaboration UI, user accounts, and team authorization are
-not implemented yet. The historical
+The implemented code is a JavaScript project-context API, local project
+workbench, URL-shortener service, and Linux, Docker, and Kubernetes operations
+lab. Version 3.5.0 adds a Chinese workbench for creating projects, recording
+context, reviewing handoff briefs, and preserving revision history. See
+[PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md) for the API and
+[WORKSPACE-UI.md](WORKSPACE-UI.md) for the workbench.
+AI integration, user accounts, and team authorization are not implemented yet.
+The historical
 package and infrastructure names remain `shortener` to preserve the working lab.
 
 Local credentials, caches, database backups, incident reports, and generated
@@ -22,9 +24,9 @@ Public repository: https://github.com/Tony-XUYANG/ai-team-assistant
 The app has no user authentication or tenant isolation yet. Keep the lab local;
 publishing the source code does not make the running service ready for public use.
 
-## Project context API: September 25, 2026
+## Project context API and workbench: September 25, 2026
 
-The current source and Compose image version is 3.4.0. The existing Kubernetes
+The current source and Compose image version is 3.5.0. The existing Kubernetes
 lab remains on the accepted 3.3.0 image until an explicit release; its existing
 data and PVC have not been migrated by this implementation step. Docker was
 started and all three existing Pods were verified healthy on September 25.
@@ -35,6 +37,20 @@ unverified/disputed information separate from confirmed facts. It does not call
 an AI model or independently verify a claim. Pagination and brief truncation
 metadata make incomplete results visible. Project scoping is enforced by queries
 and a composite foreign key; it is not an account permission boundary.
+
+Start the isolated local workbench with:
+
+```powershell
+cd E:\k8s-learning\shortener
+npm.cmd run workspace:start
+```
+
+The usual address is `http://127.0.0.1:8082`; use the URL printed by the script
+if that port is occupied. The `team-assistant-workspace` Compose project has its
+own database volume and does not replace the existing 8080 Compose or 8081
+Kubernetes environments. Credentials and generated artifacts stay under the
+E: project tree; the named volume uses the existing E: Docker data disk.
+See [WORKSPACE-UI.md](WORKSPACE-UI.md) for operating and verification steps.
 
 The migration runner now applies the unchanged title migration and additive
 `002_project_workspace` migration. CI tests source, HTTP behavior in the actual

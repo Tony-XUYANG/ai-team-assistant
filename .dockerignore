@@ -26,3 +26,8 @@ TITLE-RELEASE.md
 DATABASE-ACCESS.md
 PRODUCT-DIRECTION.md
 PROJECT-WORKSPACE.md
+WORKSPACE-UI.md
+.workspace
+.ui-artifacts
+playwright-report
+test-results

@@ -1,6 +1,6 @@
 {
   "name": "learning-url-shortener",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "private": true,
   "description": "Project context and handoff APIs with a Linux, Docker, and Kubernetes lab",
   "main": "server.js",
@@ -10,6 +10,8 @@
     "test:title": "node --test test/title.test.js",
     "test:projects": "node --test test/projects.test.js",
     "test:projects:acceptance": "node --test test/projects-acceptance.test.js",
+    "test:ui": "playwright test",
+    "workspace:start": "node scripts/start-workspace.js",
     "test": "node --test test/smoke.test.js",
     "test:version": "node --test test/version.test.js",
     "test:unit": "node --test test/logging.test.js",
@@ -31,6 +33,10 @@
     "test:db-access": "node --test test/db-access.test.js"
   },
   "dependencies": {
+    "lucide": "1.48.0",
     "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
   }
 }

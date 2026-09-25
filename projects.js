@@ -11,12 +11,14 @@ function invalid(message) {
   throw Object.assign(new Error(message), { statusCode: 400, validationMessage: message });
 }
 
-function text(value, name, max, optional = false) {
+function text(value, name, max, optional = false, multiline = false) {
   if (value === undefined || value === null) {
     if (optional) return null;
     invalid(`${name} is required`);
   }
-  if (typeof value !== "string" || !value.isWellFormed() || /[\u0000-\u001f\u007f]/u.test(value)
+  if (typeof value === "string" && multiline) value = value.replace(/\r\n?/g, "\n");
+  const controls = multiline ? /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u : /[\u0000-\u001f\u007f]/u;
+  if (typeof value !== "string" || !value.isWellFormed() || controls.test(value)
       || !value.trim() || [...value.trim()].length > max) invalid(`${name} must be 1-${max} characters`);
   return value.trim();
 }
@@ -59,7 +61,7 @@ function projectBody(body) {
   fields(body, ["name", "objective", "constraints", "source", "status"]);
   const constraints = body.constraints === undefined ? [] : body.constraints;
   if (!Array.isArray(constraints) || constraints.length > 30) invalid("constraints must be an array of at most 30 items");
-  return { name: text(body.name, "name", 120), objective: text(body.objective, "objective", 2000),
+  return { name: text(body.name, "name", 120), objective: text(body.objective, "objective", 2000, false, true),
     constraints: constraints.map(item => text(item, "constraint", 500)), source: source(body.source),
     status: choice(body.status, "status", statuses, "active") };
 }
@@ -75,7 +77,7 @@ function entryBody(body) {
   const allowedStatus = kind === "blocker" ? new Set(["open", "resolved"])
     : kind === "action" ? new Set(["todo", "doing", "done", "cancelled"])
     : new Set(["recorded"]);
-  return { kind, content: text(body.content, "content", 4000),
+  return { kind, content: text(body.content, "content", 4000, false, true),
     verification: choice(body.verification, "verification", verifications, "unverified"),
     status: choice(body.status, "status", allowedStatus, defaults[kind]),
     owner_ref: text(body.owner_ref, "owner_ref", 120, true), source: source(body.source),

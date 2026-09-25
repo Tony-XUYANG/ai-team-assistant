@@ -1,5 +1,7 @@
 const http = require("node:http");
+const fs = require("node:fs/promises");
 const { hostname } = require("node:os");
+const path = require("node:path");
 const { performance } = require("node:perf_hooks");
 const { version } = require("./package.json");
 const { log: defaultLog, requestId, safeErrorCode } = require("./logger");
@@ -9,6 +11,14 @@ const { projectRoute, handleProjectRequest } = require("./projects");
 const maxBodyBytes = 16 * 1024;
 const methods = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 const knownRoutes = new Set(["/version", "/live", "/health", "/links"]);
+const webRoot = path.join(__dirname, "public");
+const staticFiles = new Map([
+  ["/", ["index.html", "text/html; charset=utf-8"]],
+  ["/index.html", ["index.html", "text/html; charset=utf-8"]],
+  ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
+  ["/workspace.js", ["workspace.js", "text/javascript; charset=utf-8"]],
+  ["/vendor/lucide.min.js", [path.join("..", "node_modules", "lucide", "dist", "umd", "lucide.min.js"), "text/javascript; charset=utf-8"]],
+]);
 
 function sendJson(response, statusCode, body) {
   response.writeHead(statusCode, { "Content-Type": "application/json" });
@@ -49,6 +59,16 @@ function createServer({ database, log = defaultLog }) {
   }
 
   async function handle(request, response, pathname) {
+    if (["GET", "HEAD"].includes(request.method) && staticFiles.has(pathname)) {
+      const [file, contentType] = staticFiles.get(pathname);
+      try {
+        const content = await fs.readFile(path.resolve(webRoot, file));
+        response.writeHead(200, { "Content-Type": contentType, "Cache-Control": "no-store", "Content-Length": content.length });
+        return response.end(request.method === "HEAD" ? undefined : content);
+      } catch {
+        return sendJson(response, 404, { error: "not found" });
+      }
+    }
     if (projectRoute(pathname)) {
       response.setHeader("Cache-Control", "no-store");
       return handleProjectRequest({ request, response, pathname, query, readJson, sendJson });
@@ -103,6 +123,10 @@ function createServer({ database, log = defaultLog }) {
   }
 
   return http.createServer((request, response) => {
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("Referrer-Policy", "no-referrer");
+    response.setHeader("X-Frame-Options", "DENY");
+    response.setHeader("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
     const started = performance.now();
     const context = {
       requestId: requestId(request.headers["x-request-id"]),
@@ -116,7 +140,7 @@ function createServer({ database, log = defaultLog }) {
       pathname = new URL(request.url, "http://localhost").pathname;
       context.route = knownRoutes.has(pathname) ? pathname
         : /^\/links\/[a-f0-9]{8}$/.test(pathname) ? "/links/:code"
-        : /^\/[a-f0-9]{8}$/.test(pathname) ? "/:code" : projectRoute(pathname) || "unmatched";
+        : /^\/[a-f0-9]{8}$/.test(pathname) ? "/:code" : projectRoute(pathname) || (staticFiles.has(pathname) ? "/workspace" : "unmatched");
     } catch { malformed = true; }
 
     let logged = false;
@@ -136,6 +160,19 @@ function createServer({ database, log = defaultLog }) {
     response.once("close", () => recordResult(!response.writableFinished));
 
     if (malformed) return sendJson(response, 400, { error: "Invalid request URL" });
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+      let originAllowed = true;
+      if (request.headers.origin) {
+        try {
+          const origin = new URL(request.headers.origin);
+          originAllowed = ["http:", "https:"].includes(origin.protocol) && origin.host === request.headers.host;
+        } catch { originAllowed = false; }
+      }
+      if (!originAllowed || request.headers["sec-fetch-site"] === "cross-site") {
+        request.resume();
+        return sendJson(response, 403, { error: "Cross-origin writes are not allowed" });
+      }
+    }
     handle(request, response, pathname).catch(error => {
       if (response.destroyed) return;
       const status = [400, 413, 503].includes(error.statusCode) ? error.statusCode : 500;
