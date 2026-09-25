@@ -7,6 +7,16 @@
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
 /* Module accents on a white workspace: orange summaries, blue brief sections. */
+.brief-tools{display:flex;gap:4px;flex:none;margin-left:auto}
+.brief-tools button{margin-left:0}
+#copy-preview{width:min(720px,calc(100vw - 30px))}
+#copy-preview[open]{display:flex;flex-direction:column}
+#copy-preview .dialog-header,#copy-preview .dialog-footer{flex:none}
+#copy-preview .dialog-header>div{min-width:0}
+#copy-project-name{overflow-wrap:anywhere}
+.copy-preview-body{padding:16px 20px;overflow:auto;min-height:0}
+.copy-preview-body textarea{margin-top:8px;min-height:200px;font-family:Consolas,"Microsoft YaHei",monospace;font-size:12px}
+#copy-preview .dialog-footer{flex-wrap:wrap}
 :root{--ink:#172a3a;--muted:#627281;--line:#dce6eb;--green:#087f73;--soft-green:#e8f8f2;--red:#c94a4a;--amber:#c67a12;--bg:#fff}
 body{background:#fff}
 .sidebar{background:#fff;border-right-color:#d6e7e7}

@@ -7,6 +7,7 @@
   <title>协作台 · 项目工作台</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="/vendor/lucide.min.js" defer></script>
+  <script src="/brief-format.js" defer></script>
   <script src="/workspace.js" defer></script>
 </head>
 <body>
@@ -32,7 +33,7 @@
         <section class="project-heading"><div><div class="eyebrow">项目工作台 <span id="project-status" class="badge"></span></div><h1 id="project-name"></h1><p id="project-objective"></p></div><button class="primary" id="new-entry"><i data-lucide="plus"></i>添加记录</button></section>
         <div class="view-bar"><div class="tabs" role="tablist" aria-label="项目视图"><button role="tab" id="tab-brief" aria-controls="panel-brief" aria-selected="true" tabindex="0" data-tab="brief">交接简报</button><button role="tab" id="tab-history" aria-controls="panel-history" aria-selected="false" tabindex="-1" data-tab="history">记录历史</button><button role="tab" id="tab-info" aria-controls="panel-info" aria-selected="false" tabindex="-1" data-tab="info">项目资料</button></div><span class="updated" id="snapshot-time"></span></div>
         <section id="panel-brief" role="tabpanel" aria-labelledby="tab-brief">
-          <div class="brief-meta"><span><i data-lucide="files"></i>基于已记录信息</span><span>确认状态由记录者声明</span><button class="icon-button" id="export-brief" aria-label="下载交接简报" title="下载交接简报"><i data-lucide="download"></i></button></div>
+          <div class="brief-meta"><span><i data-lucide="files"></i>基于已记录信息</span><span>确认状态由记录者声明</span><div class="brief-tools"><button class="icon-button" id="copy-brief" aria-label="复制交接简报（Markdown）" title="复制交接简报（Markdown）"><i data-lucide="copy"></i></button><button class="icon-button" id="export-brief" aria-label="下载交接简报" title="下载交接简报（JSON）"><i data-lucide="download"></i></button></div></div>
           <div class="stats" id="stats"></div>
           <div class="brief-grid" id="brief-sections"></div>
         </section>
@@ -53,6 +54,11 @@
       </div>
       <footer class="dialog-footer"><button type="button" class="secondary" id="cancel-editor">取消</button><button class="primary" type="submit" id="save-editor"><i data-lucide="check"></i><span>保存</span></button></footer>
     </form>
+  </dialog>
+  <dialog id="copy-preview" aria-labelledby="copy-preview-title" aria-describedby="copy-preview-error">
+    <header class="dialog-header"><div><p class="eyebrow" id="copy-project-name"></p><h2 id="copy-preview-title">交接简报</h2></div><button type="button" class="icon-button" id="close-copy-preview" aria-label="关闭简报" title="关闭简报"><i data-lucide="x"></i></button></header>
+    <div class="copy-preview-body"><p class="inline-error" id="copy-preview-error" role="alert">剪贴板不可用，简报尚未复制。可手动复制以下文本，或下载 Markdown。</p><label for="copy-text">Markdown 简报</label><textarea id="copy-text" readonly spellcheck="false" rows="12"></textarea></div>
+    <footer class="dialog-footer"><button type="button" class="secondary" id="select-copy-text"><i data-lucide="text-select"></i>全选</button><button type="button" class="primary" id="download-markdown"><i data-lucide="download"></i>下载 Markdown</button></footer>
   </dialog>
   <div id="toast" role="status" hidden></div>
   <noscript>请启用 JavaScript 以访问项目工作台。</noscript>

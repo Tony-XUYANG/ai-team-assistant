@@ -1,6 +1,6 @@
 # AI Team Assistant: Proposed Direction
 
-Status: product exploration with a local workbench and project-context API in 3.5.0.
+Status: product exploration with a local workbench and project-context API in 3.6.0.
 The proposed AI/team workflow below remains a direction, not a completed product.
 
 ## Audience and purpose
@@ -48,9 +48,12 @@ unverified. Corrections retain history and superseded entries leave the brief.
 Project references are scoped and enforced with a composite foreign key.
 The 3.5.0 workbench adds a Chinese browser interface: project navigation,
 briefs, history, project details, record creation, task completion, blocker
-resolution, and JSON export. See [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md)
-and [WORKSPACE-UI.md](WORKSPACE-UI.md). The local Kubernetes service still runs
-the previously accepted 3.3.0 release until a separate rollout.
+resolution, and JSON export. The 3.6.0 handoff action copies the current brief
+as Markdown with sources, timestamps, verification labels, truncation state, and
+explicit trust boundaries. It leaves transmission to the person using the
+workbench. See [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md) and
+[WORKSPACE-UI.md](WORKSPACE-UI.md). The local Kubernetes service still runs the
+previously accepted 3.3.0 release until a separate rollout.
 
 There is no AI integration, identity system, multi-project authorization, or paid
 service yet. The workbench is a local single-user preview, not a team product.

@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const base = process.env.TEST_BASE_URL || "http://127.0.0.1:8080";
 
 test("built image includes the workspace and all local assets", async () => {
-  for (const [route, contentType] of [["/", "text/html"], ["/styles.css", "text/css"], ["/workspace.js", "text/javascript"], ["/vendor/lucide.min.js", "text/javascript"]]) {
+  for (const [route, contentType] of [["/", "text/html"], ["/styles.css", "text/css"], ["/workspace.js", "text/javascript"], ["/brief-format.js", "text/javascript"], ["/vendor/lucide.min.js", "text/javascript"]]) {
     const response = await fetch(base + route, { signal: AbortSignal.timeout(5000) });
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("content-type").startsWith(contentType));

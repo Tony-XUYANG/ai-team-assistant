@@ -156,3 +156,34 @@ test("white background and module colors stay consistent across responsive layou
     if (width === 639) await page.screenshot({ path: ".ui-artifacts/workbench-narrow.png", fullPage: true });
   }
 });
+
+test("copy handoff creates a Markdown brief without sending it anywhere", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__copiedBrief = "";
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+      writeText: async value => { window.__copiedBrief = value; },
+    } });
+  });
+  await page.goto(`/#project=${id}`);
+  await page.getByRole("button", { name: "复制交接简报（Markdown）" }).click();
+  await expect(page.getByRole("status")).toContainText("已复制");
+  const copied = await page.evaluate(() => window.__copiedBrief);
+  expect(copied).toContain("# 项目交接简报");
+  expect(copied).toContain("> 基于已记录信息，未调用 AI");
+  expect(copied).toContain("检查首页移动端表现");
+  expect(copied).toContain("项目记录时间（UTC）");
+});
+
+test("copy fallback shows the Markdown without claiming success", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+      writeText: async () => { throw new Error("clipboard unavailable"); },
+    } });
+  });
+  await page.goto(`/#project=${id}`);
+  await page.getByRole("button", { name: "复制交接简报（Markdown）" }).click();
+  await expect(page.getByRole("dialog", { name: "交接简报" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("剪贴板不可用");
+  await expect(page.locator("#copy-text")).toHaveValue(/# 项目交接简报/);
+  await expect(page.getByRole("button", { name: "下载 Markdown" })).toBeVisible();
+});

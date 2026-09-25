@@ -7,7 +7,8 @@ including non-technical workers managing multiple projects. See
 The implemented code is a JavaScript project-context API, local project
 workbench, URL-shortener service, and Linux, Docker, and Kubernetes operations
 lab. Version 3.5.0 adds a Chinese workbench for creating projects, recording
-context, reviewing handoff briefs, and preserving revision history. See
+context, reviewing handoff briefs, and preserving revision history. Version
+3.6.0 adds a Markdown handoff copy flow with a visible clipboard fallback. See
 [PROJECT-WORKSPACE.md](PROJECT-WORKSPACE.md) for the API and
 [WORKSPACE-UI.md](WORKSPACE-UI.md) for the workbench.
 AI integration, user accounts, and team authorization are not implemented yet.
@@ -26,7 +27,7 @@ publishing the source code does not make the running service ready for public us
 
 ## Project context API and workbench: September 25, 2026
 
-The current source and Compose image version is 3.5.0. The existing Kubernetes
+The current source and Compose image version is 3.6.0. The existing Kubernetes
 lab remains on the accepted 3.3.0 image until an explicit release; its existing
 data and PVC have not been migrated by this implementation step. Docker was
 started and all three existing Pods were verified healthy on September 25.
@@ -51,6 +52,11 @@ own database volume and does not replace the existing 8080 Compose or 8081
 Kubernetes environments. Credentials and generated artifacts stay under the
 E: project tree; the named volume uses the existing E: Docker data disk.
 See [WORKSPACE-UI.md](WORKSPACE-UI.md) for operating and verification steps.
+
+The 3.6.0 handoff action copies the currently loaded brief as Markdown for a
+person to review and paste into an authorized work channel or AI tool. It adds
+the source, timestamps, verification state, truncation state, and trust boundary
+to the copied text. It does not transmit the text or call an AI provider.
 
 The migration runner now applies the unchanged title migration and additive
 `002_project_workspace` migration. CI tests source, HTTP behavior in the actual

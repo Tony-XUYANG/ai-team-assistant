@@ -3,19 +3,7 @@
 const $ = selector => document.querySelector(selector);
 const state = { projects: [], next: 0, id: null, project: null, brief: null, history: [],
   historyNext: 0, view: "brief", generation: 0, listGeneration: 0, historyGeneration: 0, saving: false, editor: null };
-const labels = {
-  kind: { progress: "进展", decision: "决策", blocker: "阻塞", action: "待办" },
-  status: { recorded: "已记录", open: "未解决", resolved: "已解决", todo: "待办", doing: "进行中", done: "已完成", cancelled: "已取消" },
-  verification: { confirmed: "已确认", unverified: "待确认", disputed: "有争议" },
-  project: { active: "进行中", paused: "已暂停", archived: "已归档" },
-  source: { note: "工作记录", url: "网页", document: "文档", message: "消息", other: "其他" },
-};
-const sections = [
-  ["next_actions", "下一步行动", "list-todo"], ["blockers", "当前阻塞", "circle-alert"],
-  ["confirmed_facts", "已确认进展", "circle-check"], ["decisions", "最近决策", "git-branch"],
-  ["unverified", "待确认信息", "circle-help"], ["disputed", "存在争议", "messages-square"],
-  ["closed", "已结束事项", "archive"],
-];
+const { labels, sections, toMarkdown } = window.BriefFormat;
 
 function el(tag, className, value) {
   const node = document.createElement(tag);
@@ -364,11 +352,45 @@ for (const tab of document.querySelectorAll("[data-tab]")) {
     tabs[index].focus(); tabs[index].click();
   });
 }
-$("#export-brief").addEventListener("click", () => {
-  if (!state.brief) return;
-  const url = URL.createObjectURL(new Blob([JSON.stringify(state.brief, null, 2)], { type: "application/json" }));
-  const link = el("a"); link.href = url; link.download = `project-brief-${state.id}.json`; link.click();
+function downloadBrief(text, type, filename) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = el("a"); link.href = url; link.download = filename; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const copyPreview = $("#copy-preview");
+let pendingMarkdown = null;
+$("#copy-brief").addEventListener("click", async () => {
+  if (!state.brief) return;
+  const brief = state.brief, generation = state.generation;
+  let markdown;
+  try { markdown = toMarkdown(brief); }
+  catch { toast("简报生成失败，请刷新项目后重试。"); return; }
+  $("#copy-brief").disabled = true;
+  try {
+    await navigator.clipboard.writeText(markdown);
+    toast(`已复制「${brief.project.name}」交接简报`);
+  } catch {
+    if (generation !== state.generation) return;
+    pendingMarkdown = { text: markdown, id: brief.project.id };
+    $("#copy-project-name").textContent = brief.project.name;
+    $("#copy-text").value = markdown;
+    copyPreview.showModal();
+    $("#copy-text").focus();
+    $("#copy-text").select();
+  } finally { $("#copy-brief").disabled = false; }
+});
+copyPreview.addEventListener("close", () => {
+  pendingMarkdown = null;
+  $("#copy-text").value = "";
+  $("#copy-project-name").textContent = "";
+});
+$("#close-copy-preview").addEventListener("click", () => copyPreview.close());
+$("#select-copy-text").addEventListener("click", () => { $("#copy-text").focus(); $("#copy-text").select(); });
+$("#download-markdown").addEventListener("click", () => {
+  if (pendingMarkdown) downloadBrief(pendingMarkdown.text, "text/markdown; charset=utf-8", `project-brief-${pendingMarkdown.id}.md`);
+});
+$("#export-brief").addEventListener("click", () => {
+  if (state.brief) downloadBrief(JSON.stringify(state.brief, null, 2), "application/json", `project-brief-${state.id}.json`);
 });
 window.addEventListener("hashchange", route);
 matchMedia("(max-width:780px)").addEventListener("change", () => toggleNav(false));

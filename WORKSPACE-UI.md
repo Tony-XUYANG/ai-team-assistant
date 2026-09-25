@@ -1,4 +1,4 @@
-# Local Project Workbench (3.5.0)
+# Local Project Workbench (3.6.0)
 
 Resume a project from saved objectives, sources, progress, decisions, blockers,
 and actions. This is a local JavaScript/Node.js and PostgreSQL preview, without
@@ -46,7 +46,9 @@ backup command targets the older lab, not this new workspace database.
 
 The left navigation selects or creates a project. Search filters loaded project
 names; use Load more to include later pages. The three views provide a handoff
-brief, immutable record history, and project objectives/constraints/sources.
+brief, immutable record history, and project objectives/constraints/sources. The
+copy button turns the loaded brief into Markdown for review before a person
+pastes it into an authorized work channel or AI tool.
 Project metadata can be created but is not editable in this version.
 
 Every progress, decision, blocker, and action record requires a source. New and
@@ -56,10 +58,16 @@ revision; the old record stays in history. Confirmed closed records appear in
 the closed-items section. An unverified completion remains in unverified
 information until a confirmed revision is supplied.
 
-The brief uses saved records only, never inferred facts. Each section is bounded
-to 50 records and reports truncation. JSON download exports the loaded brief,
-not an unbounded history or database backup. Select E: as the browser download
-destination; the application cannot control the browser's default folder.
+The brief uses saved records only, never inferred facts. Copying includes the
+same trust boundary as the page: the confirmation state is a recorder assertion,
+sources are references, and the output is not an AI answer. The browser only
+writes to its local clipboard; it does not send the brief anywhere.
+
+Each section is bounded to 50 records and reports truncation. JSON download
+exports the loaded brief, not an unbounded history or database backup. Markdown
+fallback opens when the clipboard is unavailable and provides manual selection
+plus a download action. Select E: as the browser download destination; the
+application cannot control the browser's default folder.
 
 Failures retain the draft while the form stays open, not across a browser
 refresh. Uncertain saves and revision conflicts disable resubmission. Check

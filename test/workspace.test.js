@@ -16,7 +16,7 @@ async function fixture(t) {
 test("workspace serves only explicitly permitted assets with security headers", async t => {
   const f = await fixture(t);
   for (const [route, type] of [["/", "text/html"], ["/index.html", "text/html"], ["/styles.css", "text/css"],
-    ["/workspace.js", "text/javascript"], ["/vendor/lucide.min.js", "text/javascript"]]) {
+    ["/workspace.js", "text/javascript"], ["/brief-format.js", "text/javascript"], ["/vendor/lucide.min.js", "text/javascript"]]) {
     const response = await f.request(route);
     assert.equal(response.status, 200);
     assert.ok(response.headers.get("content-type").startsWith(type));

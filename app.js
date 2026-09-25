@@ -17,6 +17,7 @@ const staticFiles = new Map([
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
   ["/workspace.js", ["workspace.js", "text/javascript; charset=utf-8"]],
+  ["/brief-format.js", ["brief-format.js", "text/javascript; charset=utf-8"]],
   ["/vendor/lucide.min.js", [path.join("..", "node_modules", "lucide", "dist", "umd", "lucide.min.js"), "text/javascript; charset=utf-8"]],
 ]);
 

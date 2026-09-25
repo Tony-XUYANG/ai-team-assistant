@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 
-const unitFiles = ["test/logging.test.js", "test/drill-database.test.js", "test/backup.test.js", "test/ci.test.js", "test/resource.test.js", "test/migration.test.js", "test/title.test.js", "test/title-release.test.js", "test/db-access.test.js", "test/projects.test.js", "test/workspace.test.js"];
+const unitFiles = ["test/logging.test.js", "test/drill-database.test.js", "test/backup.test.js", "test/ci.test.js", "test/resource.test.js", "test/migration.test.js", "test/title.test.js", "test/title-release.test.js", "test/db-access.test.js", "test/projects.test.js", "test/workspace.test.js", "test/brief-format.test.js"];
 const acceptanceFiles = ["test/smoke.test.js", "test/version.test.js", "test/request-id.test.js", "test/title-acceptance.test.js", "test/projects-acceptance.test.js", "test/workspace-acceptance.test.js"];
 
 function redactDiagnostics(text) {
