@@ -5,3 +5,41 @@
 @media(max-width:1100px){.sidebar{width:220px}.shell{margin-left:220px}.topbar{padding:0 25px}main{padding:26px 25px}.security-note{padding:9px 25px}.brief-grid{grid-template-columns:minmax(0,1.2fr) minmax(230px,1fr);column-gap:22px}.updated{display:none}#toast{left:calc(50% + 110px)}}
 @media(max-width:780px){.mobile-only{display:inline-flex}.sidebar{transform:translateX(-100%);width:min(290px,85vw);transition:transform .15s ease;z-index:12}.sidebar.open{transform:translateX(0)}#sidebar-backdrop{position:fixed;inset:0;background:#17251a66;z-index:11}.brand{padding-bottom:22px}.brand #close-nav{margin-left:auto}.shell{margin-left:0}.topbar{padding:0 15px;height:57px;min-height:57px}.breadcrumb{gap:7px}.topbar-right{gap:6px}.local-state{display:none}.security-note{padding:9px 20px;font-size:10px}main{padding:22px 20px 30px}h1{font-size:24px}.project-heading{gap:13px;padding-bottom:18px}.project-heading>button{font-size:12px;padding:9px 11px}.project-heading p{font-size:12px}.tabs{gap:24px}.brief-meta{gap:10px;flex-wrap:wrap;font-size:10px}.brief-meta>span:nth-child(2){display:none}.stats{gap:10px;padding:18px 0}.stat{padding-left:12px;gap:8px;align-items:flex-start}.stat-icon{display:none}.stat-value{font-size:25px}.stat-label{font-size:10px}.brief-grid{grid-template-columns:minmax(0,1fr);gap:22px}.context-section.full{grid-column:auto}.entry{padding:16px 0}.page-footer{margin:0 20px;font-size:10px}.dialog-header,.dialog-footer{padding:18px 20px}.form-fields{padding:20px}.form-row{gap:12px}#toast{left:50%}#breadcrumb-name{max-width:160px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* Module accents on a white workspace: orange summaries, blue brief sections. */
+:root{--ink:#172a3a;--muted:#627281;--line:#dce6eb;--green:#087f73;--soft-green:#e8f8f2;--red:#c94a4a;--amber:#c67a12;--bg:#fff}
+body{background:#fff}
+.sidebar{background:#fff;border-right-color:#d6e7e7}
+.brand-mark{background:#087f73;box-shadow:0 7px 16px #087f7333}
+.sidebar-heading h2{color:#3c6670}
+.search{border-color:#d4e5e6;box-shadow:0 3px 12px #1d59620d}
+.project-link.active{border-color:#a9d8d2;box-shadow:0 5px 14px #1a686414}
+.project-link.active>svg{color:#087f73}
+.topbar{border-bottom-color:#d8e6eb}
+.security-note{background:#fff;border-bottom-color:#f1dfb5;color:#83621e}
+main{background:#fff}
+.project-heading{background:#fff;border-bottom:1px solid #dbe7ec;border-left:4px solid #087f73;padding:18px 20px 22px;margin-bottom:18px}
+#project-name{color:#102c43}
+.primary{background:#087f73;box-shadow:0 5px 12px #087f7324}
+.primary:hover:not(:disabled){background:#06685f;filter:none}
+.secondary{border-color:#c8dce1;box-shadow:0 3px 9px #1942580b}
+.icon-button:hover{background:#dff3f0;color:#087f73}
+.tabs button[aria-selected=true]{border-bottom-color:#087f73;color:#087f73}
+.stats{gap:14px;border-bottom-color:#d7e5ea}
+.stats .stat,.stats .stat:first-child{border:1px solid #f3c799;border-left:4px solid #c65c0b;border-radius:6px;padding:14px 16px;background:#fff4e8}
+.stats .stat:nth-child(-n+2) .stat-value,.stats .stat:nth-child(-n+2) .stat-label{color:#9a4709}
+.stats .stat:nth-child(3){border-color:#eed39a;border-left-color:#d8962c;background:#fff8e8}
+.stats .stat .stat-icon{background:#ffe1bc;color:#9a4709}
+.stats .stat:nth-child(3) .stat-icon{background:#ffedc4;color:#a9670e}
+.context-section>.section-heading{border-bottom:0}
+.context-section{--section-color:#1d62c6;--section-bg:#edf5ff;--section-border:#a8c9f4}
+.context-section .section-heading h2{color:var(--section-color);background:var(--section-bg);border:1px solid var(--section-border);border-left:4px solid var(--section-color);border-radius:6px;padding:8px 11px;min-height:40px;font-size:15px;font-weight:700;max-width:100%;flex-wrap:wrap}
+.context-section .section-heading h2>svg{color:var(--section-color)}
+.context-section .section-heading h2 .count{color:var(--section-color);background:#fff;border-radius:4px;min-width:22px;min-height:22px;padding:2px 6px;text-align:center;font-variant-numeric:tabular-nums}
+.section-empty{color:#697b87}
+.context-section .entry{border-left:2px solid var(--section-border);padding-left:12px}
+.context-section .entry:hover{background:#ffffff99}
+.entry-commands button{background:#e1f5ed;color:#087f73}
+.entry-tags .badge.green{background:#fff0db;color:#9a4709}
+.page-footer{border-top-color:#d8e6eb}
+@media(max-width:780px){.project-heading{padding:17px 16px 20px;margin-bottom:18px}.stats .stat,.stats .stat:first-child{padding:12px 10px;border-left-width:3px}.context-section .section-heading h2{padding:8px 10px}.context-section .entry{padding-left:9px}}

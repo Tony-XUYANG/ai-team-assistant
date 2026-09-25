@@ -117,3 +117,42 @@ test("a slow previous project response cannot overwrite a newly selected project
   release();
   await expect(page.getByRole("heading", { name: "另一个项目" })).toBeVisible();
 });
+
+test("white background and module colors stay consistent across responsive layouts", async ({ page }) => {
+  await page.goto(`/#project=${id}`);
+  await expect(page.locator("#brief-sections h2")).toHaveCount(7);
+  for (const selector of ["html", "body", "main", ".sidebar", ".security-note"]) {
+    await expect(page.locator(selector)).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  }
+  for (let index = 0; index < 2; index++) {
+    await expect(page.locator(".stat").nth(index)).toHaveCSS("background-color", "rgb(255, 244, 232)");
+    await expect(page.locator(".stat").nth(index)).toHaveCSS("border-left-color", "rgb(198, 92, 11)");
+    await expect(page.locator(".stat-label").nth(index)).toHaveCSS("color", "rgb(154, 71, 9)");
+  }
+  await expect(page.locator(".stat").nth(2)).toHaveCSS("background-color", "rgb(255, 248, 232)");
+  for (const width of [320, 390, 639, 820, 1280]) {
+    await page.setViewportSize({ width, height: 702 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    const headings = await page.locator("#brief-sections h2").evaluateAll(nodes => nodes.map(node => {
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      const parent = node.parentElement.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, parentLeft: parent.left, parentRight: parent.right,
+        accent: style.borderLeftColor, border: parseFloat(style.borderLeftWidth), background: style.backgroundColor,
+        contentWidth: node.scrollWidth, boxWidth: node.clientWidth };
+    }));
+    expect([...new Set(headings.map(heading => heading.accent))]).toEqual(["rgb(29, 98, 198)"]);
+    for (const heading of headings) {
+      expect(heading.border).toBeGreaterThanOrEqual(3);
+      expect(heading.background).toBe("rgb(237, 245, 255)");
+      expect(heading.left).toBeGreaterThanOrEqual(heading.parentLeft);
+      expect(heading.right).toBeLessThanOrEqual(heading.parentRight + 1);
+      expect(heading.contentWidth).toBeLessThanOrEqual(heading.boxWidth + 1);
+    }
+    const title = await page.locator(".project-heading>div").boundingBox();
+    const action = await page.locator("#new-entry").boundingBox();
+    expect(title.x + title.width).toBeLessThanOrEqual(action.x);
+    await expect(page.locator("#new-entry")).toBeVisible();
+    if (width === 639) await page.screenshot({ path: ".ui-artifacts/workbench-narrow.png", fullPage: true });
+  }
+});
