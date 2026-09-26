@@ -1,6 +1,8 @@
 const { randomUUID } = require("node:crypto");
 
-function createProjectStore(pool) {
+function createProjectStore(pool, accountId) {
+  // The zero UUID keeps isolated unit fakes deterministic. Production only exposes this store through forAccount().
+  accountId ||= "00000000-0000-4000-8000-000000000000";
   async function withTransaction(callback) {
     const client = await pool.connect();
     try {
@@ -23,10 +25,10 @@ function createProjectStore(pool) {
   async function createProject(input) {
     const id = randomUUID();
     return (await pool.query(`INSERT INTO public.projects
-      (id, name, objective, constraints, source, status)
-      VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6)
+      (id, name, objective, constraints, source, status, account_id)
+      VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7)
       RETURNING id, name, objective, constraints, source, status, created_at, updated_at`,
-    [id, input.name, input.objective, JSON.stringify(input.constraints || []), JSON.stringify(input.source || {}), input.status])).rows[0];
+    [id, input.name, input.objective, JSON.stringify(input.constraints || []), JSON.stringify(input.source || {}), input.status, accountId])).rows[0];
   }
 
   function page(rows, key, { limit, offset }) {
@@ -63,14 +65,14 @@ function createProjectStore(pool) {
             ORDER BY priority, e.created_at DESC, e.id DESC
             LIMIT 3
           ) attention), '[]'::jsonb) AS attention
-      FROM public.projects p ORDER BY p.created_at DESC, p.id DESC LIMIT $1 OFFSET $2`,
-    [options.limit + 1, options.offset])).rows;
+      FROM public.projects p WHERE p.account_id = $3 ORDER BY p.created_at DESC, p.id DESC LIMIT $1 OFFSET $2`,
+    [options.limit + 1, options.offset, accountId])).rows;
     return page(rows, "projects", options);
   }
 
   async function getProject(projectId) {
     const project = (await pool.query(`SELECT id, name, objective, constraints, source, status, created_at, updated_at
-      FROM public.projects WHERE id = $1`, [projectId])).rows[0];
+      FROM public.projects WHERE id = $1 AND account_id = $2`, [projectId, accountId])).rows[0];
     return project || null;
   }
 
@@ -79,8 +81,9 @@ function createProjectStore(pool) {
     const rows = (await pool.query(`SELECT e.*,
         NOT EXISTS (SELECT 1 FROM public.project_entries n WHERE n.supersedes_id = e.id) AS is_current
       FROM public.project_entries e WHERE e.project_id = $1
+        AND EXISTS (SELECT 1 FROM public.projects p WHERE p.id = e.project_id AND p.account_id = $4)
       ORDER BY e.created_at DESC, e.id DESC LIMIT $2 OFFSET $3`,
-    [projectId, options.limit + 1, options.offset])).rows;
+    [projectId, options.limit + 1, options.offset, accountId])).rows;
     return page(rows, "entries", options);
   }
 
@@ -99,10 +102,10 @@ function createProjectStore(pool) {
     ), ranked AS (
       SELECT *, row_number() OVER (PARTITION BY section ORDER BY created_at DESC, id DESC) AS position,
         count(*) OVER (PARTITION BY section)::int AS total FROM current_entries
-    ) SELECT to_jsonb(p) AS project, NOW() AS generated_at,
+    ) SELECT to_jsonb(p) - 'account_id' AS project, NOW() AS generated_at,
       COALESCE((SELECT jsonb_agg(to_jsonb(r) ORDER BY r.created_at DESC, r.id DESC)
         FROM ranked r WHERE position <= 50), '[]'::jsonb) AS records
-      FROM public.projects p WHERE p.id = $1`, [projectId]);
+      FROM public.projects p WHERE p.id = $1 AND p.account_id = $2`, [projectId, accountId]);
     if (!result.rowCount) return null;
     const { project, generated_at, records } = result.rows[0];
     const sections = Object.fromEntries(["confirmed_facts", "decisions", "blockers", "next_actions", "unverified", "disputed", "closed"]
@@ -117,7 +120,7 @@ function createProjectStore(pool) {
 
   async function createProjectEntry(projectId, input) {
     return withTransaction(async client => {
-      const project = await client.query("SELECT id FROM public.projects WHERE id = $1 FOR UPDATE", [projectId]);
+      const project = await client.query("SELECT id FROM public.projects WHERE id = $1 AND account_id = $2 FOR UPDATE", [projectId, accountId]);
       if (!project.rowCount) return null;
       if (input.supersedes_id) {
         const prior = (await client.query(`SELECT kind FROM public.project_entries

@@ -8,6 +8,7 @@ const { log: defaultLog, requestId, safeErrorCode } = require("./logger");
 
 const { projectRoute, handleProjectRequest } = require("./projects");
 const apiContract = require("./api/openapi.json");
+const { createAuth } = require("./auth");
 
 const maxBodyBytes = 16 * 1024;
 const methods = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
@@ -18,16 +19,19 @@ const staticFiles = new Map([
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
   ["/workspace.js", ["workspace.js", "text/javascript; charset=utf-8"]],
+  ["/login", ["login.html", "text/html; charset=utf-8"]],
+  ["/login.js", ["login.js", "text/javascript; charset=utf-8"]],
   ["/brief-format.js", ["brief-format.js", "text/javascript; charset=utf-8"]],
   ["/vendor/lucide.min.js", [path.join("..", "node_modules", "lucide", "dist", "umd", "lucide.min.js"), "text/javascript; charset=utf-8"]],
 ]);
 
 function sendJson(response, statusCode, body) {
   if (statusCode >= 400 && response.getHeader("X-API-Version") === "1") {
-    const codes = { 400: "validation_error", 403: "cross_origin_denied", 404: "not_found",
+    const codes = { 400: "validation_error", 401: "unauthenticated", 403: "cross_origin_denied", 404: "not_found", 429: "rate_limited",
       409: "revision_conflict", 413: "payload_too_large", 500: "internal_error", 503: "service_unavailable" };
-    body = { ...body, code: codes[statusCode] || "internal_error", request_id: response.getHeader("X-Request-ID") };
+    body = { ...body, code: body.code || codes[statusCode] || "internal_error", request_id: response.getHeader("X-Request-ID") };
   }
+  if (statusCode >= 400 && response.getHeader("X-API-Version") !== "1") body = { error: body.error };
   response.writeHead(statusCode, { "Content-Type": "application/json" });
   response.end(JSON.stringify(body));
 }
@@ -60,17 +64,24 @@ function readJson(request) {
   });
 }
 
-function createServer({ database, log = defaultLog }) {
-  async function query(operation, ...args) {
-    try { return await database[operation](...args); }
+function createServer({ database, log = defaultLog, secureCookies = process.env.AUTH_COOKIE_SECURE !== "false" }) {
+  const authEnabled = typeof database.forAccount === "function" && typeof database.getSession === "function";
+  async function databaseQuery(store, operation, ...args) {
+    try { return await store[operation](...args); }
     catch (error) {
       throw Object.assign(new Error("Database operation failed"), {
         statusCode: 503, dependency: "postgresql", operation, errorCode: safeErrorCode(error),
       });
     }
   }
+  const query = (operation, ...args) => databaseQuery(database, operation, ...args);
+  const auth = createAuth({ query, sendJson, readJson, secureCookies });
 
   async function handle(request, response, pathname) {
+    if (authEnabled && pathname.startsWith("/api/v1/auth/")) return auth.handle(request, response, pathname);
+    if (!authEnabled && pathname === "/api/v1/auth/session" && request.method === "GET") {
+      return sendJson(response, 200, { account: { id: "fixture", username: "fixture" }, csrf_token: "0".repeat(64), expires_at: null });
+    }
     if (request.method === "GET" && pathname === "/api/v1/openapi.json") {
       return sendJson(response, 200, apiContract);
     }
@@ -87,7 +98,11 @@ function createServer({ database, log = defaultLog }) {
     const projectsPath = projectPath(pathname);
     if (projectsPath) {
       response.setHeader("Cache-Control", "no-store");
-      return handleProjectRequest({ request, response, pathname: projectsPath, query, readJson, sendJson });
+      const account = authEnabled ? await auth.requireSession(request, response) : { id: "00000000-0000-4000-8000-000000000000" };
+      if (!account) return;
+      const scoped = authEnabled ? database.forAccount(account.id) : database;
+      return handleProjectRequest({ request, response, pathname: projectsPath,
+        query: (operation, ...args) => databaseQuery(scoped, operation, ...args), readJson, sendJson });
     }
     if (request.method === "GET" && pathname === "/version") {
       response.setHeader("Cache-Control", "no-store");
@@ -164,7 +179,8 @@ function createServer({ database, log = defaultLog }) {
         : /^\/links\/[a-f0-9]{8}$/.test(pathname) ? "/links/:code"
         : /^\/[a-f0-9]{8}$/.test(pathname) ? "/:code"
         : projectsPath ? (versioned ? "/api/v1" : "") + projectRoute(projectsPath)
-        : pathname === "/api/v1/openapi.json" ? pathname : (staticFiles.has(pathname) ? "/workspace" : "unmatched");
+        : ["/api/v1/auth/session", "/api/v1/auth/login", "/api/v1/auth/activate", "/api/v1/auth/logout", "/api/v1/openapi.json"].includes(pathname)
+          ? pathname : (staticFiles.has(pathname) ? "/workspace" : "unmatched");
     } catch { malformed = true; }
 
     let logged = false;

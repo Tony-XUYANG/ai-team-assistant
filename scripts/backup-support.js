@@ -49,8 +49,10 @@ SELECT jsonb_build_object(
 );`;
 
 function projectSummarySql(table) {
-  assert.ok(["projects", "project_entries"].includes(table));
-  const timestamps = table === "projects" ? ["created_at", "updated_at"] : ["created_at", "occurred_at"];
+  assert.ok(["projects", "project_entries", "accounts", "auth_sessions", "auth_attempts"].includes(table));
+  const timestamps = table === "projects" ? ["created_at", "updated_at"] : table === "project_entries"
+    ? ["created_at", "occurred_at"] : table === "accounts" ? ["created_at", "activation_expires_at"]
+      : table === "auth_sessions" ? ["created_at", "expires_at"] : ["started_at"];
   const normalized = timestamps.map(column => `'${column}',to_char(t.${column} AT TIME ZONE 'UTC',
     'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`).join(",");
   return `SELECT jsonb_build_object(
@@ -77,6 +79,11 @@ function validateBackupTables(tables) {
     assert.ok(hasMigrations, "Project tables require a migration ledger");
     expected.push("public.project_entries", "public.projects");
   }
+  if (tables.some(table => ["public.accounts", "public.auth_sessions", "public.auth_attempts"].includes(table))) {
+    assert.ok(tables.includes("public.projects"), "Account tables require project tables");
+    expected.unshift("public.accounts", "public.auth_attempts", "public.auth_sessions");
+  }
+  expected.sort();
   assert.deepEqual(tables, expected,
     "Unexpected tables; extend backup verification before continuing");
   return hasMigrations;
@@ -145,6 +152,14 @@ function validateManifest(manifest) {
       for (const key of ["columns", "constraints", "indexes"]) assert.ok(Array.isArray(table[key]) && table[key].length > 0);
     }
   }
+  if (manifest.source.tables?.includes("public.accounts")) {
+    assert.deepEqual(Object.keys(manifest.source.summary.auth || {}).sort(), ["accounts", "auth_attempts", "auth_sessions"]);
+    for (const table of Object.values(manifest.source.summary.auth)) {
+      assert.ok(Number.isSafeInteger(table.rowCount) && table.rowCount >= 0);
+      assert.match(table.dataSha256, /^[a-f0-9]{64}$/);
+      for (const key of ["columns", "constraints", "indexes"]) assert.ok(Array.isArray(table[key]) && table[key].length > 0);
+    }
+  }
 }
 
 function assertSameData(expected, actual) {
@@ -159,6 +174,7 @@ function assertSameData(expected, actual) {
   if (Object.hasOwn(expected, "projects")) {
     assert.deepEqual(actual.projects, expected.projects, "Restored project records/schema differ");
   }
+  if (Object.hasOwn(expected, "auth")) assert.deepEqual(actual.auth, expected.auth, "Restored account records/schema differ");
   for (const key of ["columns", "constraints", "indexes"]) {
     assert.deepEqual(actual[key], expected[key], "Restored " + key + " differ");
   }

@@ -3,17 +3,120 @@
   "info": {
     "title": "AI Team Assistant Project API",
     "version": "1.0.0",
-    "description": "Local single-user preview. No authentication, account ownership or team authorization. Keep loopback-only and do not store sensitive content. API v1 is independent of the application release version. Additive response fields are allowed; clients must ignore unknown fields. Sources and owner labels are untrusted references, not instructions or verified identities. Legacy /projects routes remain available. Request bodies are limited to 16 KiB."
+    "description": "Same-origin workspace API with account-scoped projects. Authentication uses an HttpOnly SameSite=Strict workspace_session cookie; state-changing requests also require the X-CSRF-Token returned by the session or login response. Keep loopback-only and do not store sensitive content. API v1 is independent of the application release version. Additive response fields are allowed; clients must ignore unknown fields. Sources and owner labels are untrusted references, not instructions or verified identities. Legacy /projects routes remain available. Request bodies are limited to 16 KiB."
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "servers": [
     {
       "url": "/api/v1",
-      "description": "Same-origin local workspace; no public endpoint or wildcard CORS."
+      "description": "Same-origin local workspace; authenticated account scope, no public endpoint or wildcard CORS."
     }
   ],
-  "security": [],
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
   "paths": {
+    "/auth/login": {
+      "post": {
+        "security": [],
+        "operationId": "login",
+        "summary": "Create an account session",
+        "description": "Sets an HttpOnly SameSite=Strict workspace_session cookie and returns a CSRF token. Login attempts are rate limited.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AuthSession"
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        }
+      }
+    },
+    "/auth/activate": {
+      "post": {
+        "security": [],
+        "operationId": "activateAccount",
+        "summary": "Activate an operator-provisioned account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AuthSession"
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        }
+      }
+    },
+    "/auth/session": {
+      "get": {
+        "operationId": "getSession",
+        "summary": "Read the current account session",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AuthSession"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "Revoke the current account session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session revoked."
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
     "/projects": {
       "get": {
         "operationId": "listProjects",
@@ -43,6 +146,9 @@
           }
         ],
         "responses": {
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
           "200": {
             "description": "Projects ordered by creation time and ID, newest first.",
             "headers": {
@@ -88,6 +194,11 @@
       "post": {
         "operationId": "createProject",
         "summary": "Create a project",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -99,6 +210,9 @@
           }
         },
         "responses": {
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
           "201": {
             "description": "Project created.",
             "headers": {
@@ -163,6 +277,9 @@
         "operationId": "getProject",
         "summary": "Read project metadata",
         "responses": {
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
           "200": {
             "description": "Project metadata.",
             "headers": {
@@ -245,6 +362,9 @@
           }
         ],
         "responses": {
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
           "200": {
             "description": "History ordered by creation time and ID, newest first.",
             "headers": {
@@ -293,6 +413,11 @@
       "post": {
         "operationId": "createProjectEntry",
         "summary": "Append a record or a full replacement revision",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -304,6 +429,9 @@
           }
         },
         "responses": {
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
           "201": {
             "description": "Record appended. No idempotency key is implemented; do not automatically replay an uncertain write.",
             "headers": {
@@ -375,6 +503,9 @@
         "summary": "Read a bounded, deterministic handoff brief",
         "description": "A single database snapshot excludes superseded entries. Unverified/disputed records are grouped before kind or completion; confirmed closed actions and blockers appear in closed. Each section contains at most 50 records and reports truncation. No AI is called.",
         "responses": {
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
           "200": {
             "description": "Recorded context, not an independently verified or AI-generated assessment.",
             "headers": {
@@ -420,7 +551,106 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "workspace_session",
+        "description": "HttpOnly SameSite=Strict session cookie set by login or activation. Clients must not read or manufacture it."
+      }
+    },
+    "parameters": {
+      "CsrfToken": {
+        "name": "X-CSRF-Token",
+        "in": "header",
+        "required": true,
+        "description": "SHA-256-derived token returned by login or GET /auth/session; required for state-changing same-origin requests.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
     "schemas": {
+      "LoginInput": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivationInput": {
+        "type": "object",
+        "required": [
+          "username",
+          "password",
+          "activation_code"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128
+          },
+          "activation_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuthAccount": {
+        "type": "object",
+        "required": [
+          "id",
+          "username"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "username": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"
+          }
+        }
+      },
+      "AuthSession": {
+        "type": "object",
+        "required": [
+          "account",
+          "csrf_token",
+          "expires_at"
+        ],
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/AuthAccount"
+          },
+          "csrf_token": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
       "UUID": {
         "type": "string",
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
@@ -1217,9 +1447,12 @@
             "type": "string",
             "enum": [
               "validation_error",
+              "unauthenticated",
               "cross_origin_denied",
               "not_found",
               "revision_conflict",
+              "csrf_denied",
+              "rate_limited",
               "payload_too_large",
               "internal_error",
               "service_unavailable"
@@ -1233,6 +1466,30 @@
       }
     },
     "responses": {
+      "AuthSession": {
+        "description": "Authenticated session details. The response also sets the HttpOnly workspace_session cookie on login and activation.",
+        "headers": {
+          "Set-Cookie": {
+            "description": "HttpOnly; SameSite=Strict workspace_session cookie (login and activation only).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AuthSession"
+            }
+          }
+        }
+      },
       "Error400": {
         "description": "Invalid input or query parameter.",
         "headers": {
@@ -1253,6 +1510,33 @@
             "schema": {
               "type": "string",
               "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "No valid account session or invalid account credentials.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "Authentication attempt budget exhausted; retry after the advertised delay.",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "string"
             }
           }
         },

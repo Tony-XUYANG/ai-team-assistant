@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#087f73">
+  <title>登录 · 协作台</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/vendor/lucide.min.js" defer></script>
+  <script src="/login.js" defer></script>
+</head>
+<body class="login-page">
+  <main class="login-main">
+    <div class="login-brand"><span class="brand-mark"><i data-lucide="panels-top-left"></i></span><strong>协作台</strong></div>
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="login-heading"><h1 id="login-title">登录工作空间</h1><p>使用你的账号访问项目</p></div>
+      <div class="login-modes" role="tablist" aria-label="账号操作">
+        <button type="button" role="tab" aria-selected="true" data-mode="login">登录</button>
+        <button type="button" role="tab" aria-selected="false" data-mode="activate">激活账号</button>
+      </div>
+      <form id="login-form">
+        <label>用户名<input name="username" autocomplete="username" required minlength="3" maxlength="64" pattern="[a-z0-9][a-z0-9_-]{2,63}"></label>
+        <label id="activation-field" hidden>激活码<input name="activation_code" autocomplete="off" spellcheck="false"></label>
+        <label>密码<input name="password" type="password" autocomplete="current-password" required minlength="12" maxlength="128"></label>
+        <p id="login-error" class="inline-error" role="alert" hidden></p>
+        <button class="primary login-submit" type="submit">登录</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

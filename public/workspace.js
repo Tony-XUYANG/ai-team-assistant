@@ -5,6 +5,7 @@ const state = { projects: [], next: 0, id: null, project: null, brief: null, his
   historyNext: 0, view: "brief", generation: 0, listGeneration: 0, historyGeneration: 0, saving: false, editor: null,
   projectsLoaded: false, projectsLoading: false, projectsError: null, projectsUpdatedAt: null };
 const { labels, sections, toMarkdown } = window.BriefFormat;
+let csrfToken = null;
 
 function el(tag, className, value) {
   const node = document.createElement(tag);
@@ -39,8 +40,9 @@ function errorText(error) {
 }
 async function api(route, body) {
   const response = await fetch("/api/v1" + route, { method: body === undefined ? "GET" : "POST", cache: "no-store",
-    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    headers: body === undefined ? {} : { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(10000) });
+  if (response.status === 401) { location.replace("/login"); throw new Error("Sign in required"); }
   if (!response.ok) throw Object.assign(new Error("Request failed"), { status: response.status, requestId: response.headers.get("x-request-id") });
   return response.json();
 }
@@ -512,7 +514,19 @@ $("#download-markdown").addEventListener("click", () => {
 $("#export-brief").addEventListener("click", () => {
   if (state.brief) downloadBrief(JSON.stringify(state.brief, null, 2), "application/json", `project-brief-${state.id}.json`);
 });
+$("#logout").addEventListener("click", async () => {
+  try { await fetch("/api/v1/auth/logout", { method: "POST", headers: { "X-CSRF-Token": csrfToken }, signal: AbortSignal.timeout(10000) }); }
+  finally { location.replace("/login"); }
+});
 window.addEventListener("hashchange", route);
 matchMedia("(max-width:780px)").addEventListener("change", () => toggleNav(false));
 toggleNav(false);
-icons(); route(); loadProjects();
+icons();
+fetch("/api/v1/auth/session", { cache: "no-store", signal: AbortSignal.timeout(10000) }).then(async response => {
+  if (response.status === 401) { location.replace("/login"); return; }
+  if (!response.ok) throw Error("Session check failed");
+  const session = await response.json();
+  csrfToken = session.csrf_token;
+  $("#account-name").textContent = session.account.username;
+  route(); loadProjects();
+}).catch(() => { $("#page-error").textContent = "登录状态暂时无法验证，请刷新页面重试。"; $("#page-error").hidden = false; });

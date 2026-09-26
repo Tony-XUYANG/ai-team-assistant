@@ -2,6 +2,9 @@ const { test, expect } = require("@playwright/test");
 const { randomUUID } = require("node:crypto");
 
 test("real workbench persists a completed action and preserves its history", async ({ page, request, baseURL }) => {
+  const username = process.env.WORKSPACE_TEST_USERNAME;
+  const password = process.env.WORKSPACE_TEST_PASSWORD;
+  test.skip(!username || !password, "Set WORKSPACE_TEST_USERNAME and WORKSPACE_TEST_PASSWORD for live authenticated UI acceptance");
   const target = new URL(baseURL);
   expect(target.protocol).toBe("http:");
   expect(target.hostname).toBe("127.0.0.1");
@@ -14,7 +17,11 @@ test("real workbench persists a completed action and preserves its history", asy
   page.on("pageerror", error => errors.push(error.message));
   const name = `Workbench acceptance ${randomUUID().slice(0, 8)}`;
   const content = "Verify a completed task survives a page reload";
-  await page.goto("/");
+  await page.goto("/login");
+  await page.getByLabel("用户名").fill(username);
+  await page.getByLabel("密码").fill(password);
+  await page.getByRole("button", { name: "登录", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
   await page.getByRole("button", { name: "\u65b0\u5efa\u9879\u76ee", exact: true }).first().click();
   await page.getByLabel("\u9879\u76ee\u540d\u79f0", { exact: true }).fill(name);
   await page.getByLabel("\u9879\u76ee\u76ee\u6807").fill("Synthetic workbench acceptance, no confidential data");
@@ -49,7 +56,8 @@ test("real workbench persists a completed action and preserves its history", asy
   await expect(page.locator("#history-list .entry")).toHaveCount(2);
   await expect(page.getByText("\u5df2\u88ab\u66f4\u6b63", { exact: true })).toBeVisible();
 
-  const historyResponse = await request.get(`/api/v1/projects/${project.id}/entries`);
+  const cookies = (await page.context().cookies()).map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
+  const historyResponse = await request.get(`/api/v1/projects/${project.id}/entries`, { headers: { cookie: cookies } });
   expect(historyResponse.ok()).toBe(true);
   const { entries } = await historyResponse.json();
   expect(entries).toHaveLength(2);

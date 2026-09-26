@@ -111,7 +111,7 @@ test("served OpenAPI is self-contained and accurately exposes the local-only bou
   assert.deepEqual(response.body, contract);
   assert.equal(response.headers["x-api-version"], "1");
   assert.equal(response.headers["cache-control"], "no-store");
-  assert.deepEqual(contract.security, []);
+  assert.deepEqual(contract.security, [{ cookieAuth: [] }]);
   assert.deepEqual(contract.servers.map(server => server.url), ["/api/v1"]);
   function walk(value) {
     if (!value || typeof value !== "object") return;
@@ -123,7 +123,9 @@ test("served OpenAPI is self-contained and accurately exposes the local-only bou
   }
   walk(contract);
   const operations = Object.values(contract.paths).flatMap(path => [path.get, path.post].filter(Boolean));
-  assert.equal(new Set(operations.map(operation => operation.operationId)).size, 6);
+  assert.equal(new Set(operations.map(operation => operation.operationId)).size, 10);
+  assert.deepEqual(contract.paths["/auth/login"].post.security, []);
+  assert.deepEqual(contract.paths["/auth/activate"].post.security, []);
 });
 
 test("contract validates input variants, nullability, bounds and kind-specific statuses", () => {

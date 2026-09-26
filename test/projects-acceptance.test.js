@@ -1,12 +1,14 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { randomUUID } = require("node:crypto");
+const { createAuthSession } = require("./auth-fixture");
 const base = process.env.TEST_BASE_URL || "http://127.0.0.1:8080";
 const source = { kind: "note", label: "Automated acceptance; synthetic data" };
+let auth;
+test.before(async () => { auth = await createAuthSession(base); });
 async function request(route, body) {
-  const response = await fetch(base + route, { method: body ? "POST" : "GET", signal: AbortSignal.timeout(5000),
-    headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
-  return { status: response.status, data: await response.json() };
+  return auth.request(route, { method: body === undefined ? "GET" : "POST",
+    headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
 }
 async function create() {
   const response = await request("/projects", { name: "Acceptance " + randomUUID(), objective: "Verify recorded context",

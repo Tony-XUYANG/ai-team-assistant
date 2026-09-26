@@ -1,5 +1,6 @@
 const { Client } = require("pg");
 const { applyProjectMigration } = require("./scripts/project-migration");
+const { applyAuthMigration } = require("./scripts/auth-migration");
 const { applyTitleMigration } = require("./scripts/migration-support");
 
 async function migrate() {
@@ -20,7 +21,8 @@ async function migrate() {
     await client.query("COMMIT");
     const title = await applyTitleMigration(client);
     const projects = await applyProjectMigration(client);
-    const result = { ...title, migrations: [title, projects] };
+    const auth = await applyAuthMigration(client);
+    const result = { ...title, migrations: [title, projects, auth] };
     console.log(JSON.stringify({ event: "migration_completed", ...result }));
     return result;
   } catch (error) {

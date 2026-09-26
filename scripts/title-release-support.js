@@ -5,12 +5,13 @@ const { setTimeout: delay } = require("node:timers/promises");
 const { backupDirectory, validateManifest, verifyArchive } = require("./backup-support");
 const { titleMigration, migrationChecksum, assertTitleShape } = require("./migration-support");
 const { projectMigration, verifyProjectSchema } = require("./project-migration");
+const { authMigration, verifyAuthSchema } = require("./auth-migration");
 
 function verifyMigrationResults(result) {
   assert.equal(result?.checksum, migrationChecksum(titleMigration));
   assert.ok(["applied", "already_applied"].includes(result.status));
-  assert.equal(result.migrations?.length, 2, "Both migration results are required before deployment");
-  for (const migration of [titleMigration, projectMigration]) {
+  assert.equal(result.migrations?.length, 3, "All migration results are required before deployment");
+  for (const migration of [titleMigration, projectMigration, authMigration]) {
     const item = result.migrations.find(item => item.id === migration.id);
     assert.equal(item?.checksum, migrationChecksum(migration));
     assert.ok(["applied", "already_applied"].includes(item.status));
@@ -134,8 +135,10 @@ async function verifyTitleSchema(kubectl) {
 }
 
 async function verifyWorkspaceSchema(kubectl) {
-  await verifyProjectSchema({ query: async (sql, parameters = []) => ({ rows: await queryThroughApi(kubectl, sql, parameters) }) });
-  return { id: projectMigration.id, checksum: migrationChecksum(projectMigration), verified: true };
+  const db = { query: async (sql, parameters = []) => ({ rows: await queryThroughApi(kubectl, sql, parameters) }) };
+  await verifyProjectSchema(db);
+  await verifyAuthSchema(db);
+  return { ids: [projectMigration.id, authMigration.id], verified: true };
 }
 
 module.exports = { requireVerifiedBackup, migrationJob, executeMigrationJob, queryThroughApi, preserveLegacyRows, verifyTitleSchema,

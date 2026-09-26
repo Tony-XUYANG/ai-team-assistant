@@ -6,6 +6,17 @@
 @media(max-width:780px){.mobile-only{display:inline-flex}.sidebar{transform:translateX(-100%);width:min(290px,85vw);transition:transform .15s ease;z-index:12}.sidebar.open{transform:translateX(0)}#sidebar-backdrop{position:fixed;inset:0;background:#17251a66;z-index:11}.brand{padding-bottom:22px}.brand #close-nav{margin-left:auto}.shell{margin-left:0}.topbar{padding:0 15px;height:57px;min-height:57px}.breadcrumb{gap:7px}.topbar-right{gap:6px}.local-state{display:none}.security-note{padding:9px 20px;font-size:10px}main{padding:22px 20px 30px}h1{font-size:24px}.project-heading{gap:13px;padding-bottom:18px}.project-heading>button{font-size:12px;padding:9px 11px}.project-heading p{font-size:12px}.tabs{gap:24px}.brief-meta{gap:10px;flex-wrap:wrap;font-size:10px}.brief-meta>span:nth-child(2){display:none}.stats{gap:10px;padding:18px 0}.stat{padding-left:12px;gap:8px;align-items:flex-start}.stat-icon{display:none}.stat-value{font-size:25px}.stat-label{font-size:10px}.brief-grid{grid-template-columns:minmax(0,1fr);gap:22px}.context-section.full{grid-column:auto}.entry{padding:16px 0}.page-footer{margin:0 20px;font-size:10px}.dialog-header,.dialog-footer{padding:18px 20px}.form-fields{padding:20px}.form-row{gap:12px}#toast{left:50%}#breadcrumb-name{max-width:160px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
+.login-page{min-height:100vh;background:#fff}
+.login-main{max-width:440px;margin:0 auto;padding:clamp(36px,9vh,90px) 20px 40px}
+.login-brand{display:flex;align-items:center;gap:11px;margin-bottom:40px;font-size:20px}
+.login-panel{border-top:4px solid #087f73;padding-top:22px}
+.login-heading p{color:var(--muted);font-size:13px;margin-top:4px}
+.login-modes{display:flex;border-bottom:1px solid var(--line);margin:26px 0 22px;gap:24px}
+.login-modes button{border-bottom:2px solid transparent;border-radius:0;padding:9px 1px}
+.login-modes button[aria-selected=true]{border-bottom-color:#087f73;color:#087f73;font-weight:650}
+.login-panel form{display:grid;gap:18px}
+.login-submit{width:100%;margin-top:5px}
+
 /* Module accents on a white workspace: orange summaries, blue brief sections. */
 .brief-tools{display:flex;gap:4px;flex:none;margin-left:auto}
 .brief-tools button{margin-left:0}

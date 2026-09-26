@@ -2,6 +2,8 @@ const { randomBytes } = require("node:crypto");
 const { Pool } = require("pg");
 const { log, safeErrorCode } = require("./logger");
 const { createProjectStore } = require("./project-store");
+const { createAuthStore } = require("./auth-store");
+const { verifyAuthSchema } = require("./scripts/auth-migration");
 const { verifyProjectSchema } = require("./scripts/project-migration");
 const { titleShapeSql, assertTitleShape } = require("./scripts/migration-support");
 
@@ -20,6 +22,7 @@ async function initialize() {
   // Migrations run before rollout, not once per replica during startup.
   assertTitleShape((await pool.query(titleShapeSql)).rows);
   await verifyProjectSchema(pool);
+  await verifyAuthSchema(pool);
   await checkHealth();
 }
 
@@ -51,7 +54,8 @@ async function getLink(code) {
 }
 
 module.exports = {
-  ...createProjectStore(pool),
+  ...createAuthStore(pool),
+  forAccount: accountId => createProjectStore(pool, accountId),
   initialize,
   createLink,
   findLink,

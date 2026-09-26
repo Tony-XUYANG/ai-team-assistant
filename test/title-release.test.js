@@ -5,7 +5,8 @@ const path = require("node:path");
 const { migrationJob, executeMigrationJob, requireVerifiedBackup, verifyMigrationResults } = require("../scripts/title-release-support");
 const { titleMigration, migrationChecksum } = require("../scripts/migration-support");
 const { projectMigration } = require("../scripts/project-migration");
-const migrations = [titleMigration, projectMigration].map(m => ({ id: m.id, checksum: migrationChecksum(m), status: "applied" }));
+const { authMigration } = require("../scripts/auth-migration");
+const migrations = [titleMigration, projectMigration, authMigration].map(m => ({ id: m.id, checksum: migrationChecksum(m), status: "applied" }));
 const id = "2026-09-24T10-10-00-000Z-1234abcd";
 const imageRef = "localhost:5001/shortener@sha256:" + "a".repeat(64);
 const container = { envFrom: [{ configMapRef: { name: "api-config" } }], env: [
@@ -90,8 +91,8 @@ test("backup release gate refuses path traversal before reading an archive", asy
 test("release rejects missing, incomplete or modified project migration evidence", () => {
   const result = { status: "applied", checksum: migrationChecksum(titleMigration), migrations };
   verifyMigrationResults(result);
-  for (const change of [undefined, migrations.slice(0, 1), [migrations[0], { ...migrations[1], checksum: "0".repeat(64) }],
-    [migrations[0], { ...migrations[1], status: "failed" }], [migrations[0], migrations[0]]]) {
+  for (const change of [undefined, migrations.slice(0, 2), [migrations[0], { ...migrations[1], checksum: "0".repeat(64) }, migrations[2]],
+    [migrations[0], { ...migrations[1], status: "failed" }, migrations[2]], [migrations[0], migrations[0], migrations[2]]]) {
     assert.throws(() => verifyMigrationResults({ ...result, migrations: change }));
   }
 });

@@ -1,19 +1,20 @@
 const assert = require("node:assert/strict");
 const { randomUUID } = require("node:crypto");
+const { createAuthSession } = require("./auth-fixture");
 
 async function collectContractSamples(base) {
   const samples = [];
   const source = { kind: "note", label: "Automated API contract; synthetic data" };
+  const auth = await createAuthSession(base);
   async function request(path, route = path, body, status = 200, headers = {}) {
     const method = body === undefined ? "GET" : "POST";
-    const response = await fetch(base + "/api/v1" + route, {
+    const result = await auth.request("/api/v1" + route, {
       method, headers: { "content-type": "application/json", ...headers },
-      body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(5000),
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
-    assert.equal(response.status, status, `${method} ${path}`);
-    const data = await response.json();
-    samples.push({ method, path, status, headers: Object.fromEntries(response.headers), body: data });
-    return data;
+    assert.equal(result.status, status, `${method} ${path}`);
+    samples.push({ method, path, status, headers: Object.fromEntries(result.headers), body: result.data });
+    return result.data;
   }
   const project = await request("/projects", "/projects", {
     name: "API contract " + randomUUID(), objective: "Check native-client API shapes", source,

@@ -1,6 +1,6 @@
 {
   "name": "learning-url-shortener",
-  "version": "3.9.0",
+  "version": "3.10.0",
   "private": true,
   "description": "Project context and handoff APIs with a Linux, Docker, and Kubernetes lab",
   "main": "server.js",
@@ -13,6 +13,7 @@
     "test:projects:acceptance": "node --test test/projects-acceptance.test.js",
     "test:ui": "playwright test",
     "workspace:start": "node scripts/start-workspace.js",
+    "workspace:account": "node scripts/provision-account.js",
     "test": "node --test test/smoke.test.js",
     "test:version": "node --test test/version.test.js",
     "test:unit": "node --test test/logging.test.js",

@@ -193,6 +193,13 @@ async function openSnapshot() {
         summary.projects[table] = await waitMessages(++count);
       }
     }
+    if (metadata.tables.includes("public.accounts")) {
+      summary.auth = {};
+      for (const table of ["accounts", "auth_attempts", "auth_sessions"]) {
+        process.child.stdin.write(projectSummarySql(table) + "\n");
+        summary.auth[table] = await waitMessages(++count);
+      }
+    }
     return { metadata, summary, close };
   } catch (error) {
     process.child.stdin.end("ROLLBACK;\n");
@@ -312,6 +319,12 @@ async function verifyRestoration() {
     restored.projects = {};
     for (const table of ["projects", "project_entries"]) {
       restored.projects[table] = JSON.parse(await streamCommand("docker.exe", sqlArgs, { inputText: projectSummarySql(table) + "\n" }));
+    }
+  }
+  if (manifest.source.summary.auth) {
+    restored.auth = {};
+    for (const table of ["accounts", "auth_attempts", "auth_sessions"]) {
+      restored.auth[table] = JSON.parse(await streamCommand("docker.exe", sqlArgs, { inputText: projectSummarySql(table) + "\n" }));
     }
   }
   report.phase = "compare-data";

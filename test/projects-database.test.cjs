@@ -7,9 +7,16 @@ const { verifyProjectSchema, applyProjectMigration } = require("../scripts/proje
 assert.equal(process.env.SHORTENER_CI_FIXTURE, "isolated-tmpfs", "Run this SQL fixture only through scripts/ci.js");
 assert.equal(process.env.PGDATABASE, "ci_lab");
 const pool = new Pool({ max: 2, connectionTimeoutMillis: 2000, statement_timeout: 3000 });
-const store = createProjectStore(pool);
+const accountId = randomUUID();
+let store;
 const source = { kind: "note", label: "Database acceptance", captured_at: "2026-09-25T00:00:00.000Z" };
 test.after(() => pool.end());
+
+test.before(async () => {
+  await pool.query(`INSERT INTO public.accounts (id, username, password_hash)
+    VALUES ($1, $2, $3)`, [accountId, "db_" + accountId.replaceAll("-", ""), "database-test-password"]);
+  store = createProjectStore(pool, accountId);
+});
 
 test("PostgreSQL enforces project-scoped revisions and legal status independently of HTTP", async () => {
   const one = await store.createProject({ name: "Database one", objective: "Verify integrity", status: "active", source });

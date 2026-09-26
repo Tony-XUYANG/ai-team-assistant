@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 
-const unitFiles = ["test/logging.test.js", "test/drill-database.test.js", "test/backup.test.js", "test/ci.test.js", "test/resource.test.js", "test/migration.test.js", "test/title.test.js", "test/title-release.test.js", "test/db-access.test.js", "test/projects.test.js", "test/workspace.test.js", "test/brief-format.test.js", "test/api-contract.test.js"];
+const unitFiles = ["test/logging.test.js", "test/drill-database.test.js", "test/backup.test.js", "test/ci.test.js", "test/resource.test.js", "test/migration.test.js", "test/title.test.js", "test/title-release.test.js", "test/db-access.test.js", "test/projects.test.js", "test/workspace.test.js", "test/brief-format.test.js", "test/api-contract.test.js", "test/auth.test.js"];
 const acceptanceFiles = ["test/smoke.test.js", "test/version.test.js", "test/request-id.test.js", "test/title-acceptance.test.js", "test/projects-acceptance.test.js", "test/workspace-acceptance.test.js"];
 
 function redactDiagnostics(text) {
@@ -35,7 +35,7 @@ function verifyRegistryManifest(bytes, digest, expected) {
 }
 
 async function sourceFingerprint(project) {
-  const files = ["Dockerfile", ".dockerignore", "package.json", "package-lock.json", "server.js", "app.js", "database.js", "logger.js", "migrate.js", "projects.js", "project-store.js", "playwright.config.js", "workspace.compose.yaml"];
+  const files = ["Dockerfile", ".dockerignore", "package.json", "package-lock.json", "server.js", "app.js", "auth.js", "auth-store.js", "database.js", "logger.js", "migrate.js", "projects.js", "project-store.js", "playwright.config.js", "workspace.compose.yaml"];
   async function walk(folder) {
     const entries = await fs.readdir(path.join(project, folder), { withFileTypes: true });
     for (const entry of entries) {

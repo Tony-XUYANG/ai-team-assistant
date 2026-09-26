@@ -44,7 +44,7 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
   const docker = (...args) => run(dockerPath, args);
   async function installTests() {
     const files = [];
-    const installed = [...acceptanceFiles, "test/projects-database.test.cjs", "test/api-contract-samples.cjs"];
+    const installed = [...acceptanceFiles, "test/projects-database.test.cjs", "test/api-contract-samples.cjs", "test/auth-fixture.js"];
     for (const name of installed) files.push({ name, data: (await fs.readFile(path.join(project, name))).toString("base64") });
     const installer = `
       const fs=require('node:fs');
@@ -179,7 +179,7 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
     const restoreCheck = `const assert=require('node:assert/strict');const {Client}=require('pg');let phase='connect';
       (async()=>{const source=new Client({statement_timeout:3000}),restored=new Client({database:'ci_restored',statement_timeout:3000});
         try {await source.connect();await restored.connect();
-          for(const [table,sql] of ${JSON.stringify(["projects", "project_entries"].map(table => [table, projectSummarySql(table)]))}) {
+          for(const [table,sql] of ${JSON.stringify(["projects", "project_entries", "accounts", "auth_attempts", "auth_sessions"].map(table => [table, projectSummarySql(table)]))}) {
             phase=table+':query';
             const a=(await source.query(sql)).rows[0].jsonb_build_object;
             const b=(await restored.query(sql)).rows[0].jsonb_build_object;
@@ -187,6 +187,7 @@ async function runCI({ image, runDir, drillFail = false, oldImage }) {
           }
           phase='schema';
           await require('./scripts/project-migration').verifyProjectSchema(restored);
+          await require('./scripts/auth-migration').verifyAuthSchema(restored);
           console.log(JSON.stringify({projectTablesRestored:true,contentsAndSchemaMatch:true}));
         } finally {await source.end();await restored.end()}
       })().catch(error=>{console.error(JSON.stringify({event:'project_restore_failed',phase,code:error.code||error.name,
