@@ -11,6 +11,7 @@ test
 scripts/*
 !scripts/migration-support.js
 !scripts/project-migration.js
+!scripts/auth-migration.js
 .releases
 .incidents
 .backups
